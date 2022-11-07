@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".Activity.GameActivity">
+
+    <LinearLayout
+        android:id="@+id/linear1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/orange"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="10dp">
+
+        <de.hdodenhof.circleimageview.CircleImageView xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/avatar_competitor"
+            android:layout_width="80dp"
+            app:civ_circle_background_color="@color/white"
+            android:layout_height="80dp"
+            android:src="@drawable/user"
+            app:civ_border_color="#EEEFF1"
+            app:civ_border_width="6dp" />
+
+        <TextView
+            android:id="@+id/name_competitor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginLeft="20dp"
+            android:text="Đối phương"
+            android:textColor="@color/white"
+            android:textSize="25dp"
+            android:textStyle="bold" />
+    </LinearLayout>
+    <FrameLayout
+        android:id="@+id/frameGvGame"
+        android:layout_width="match_parent"
+        android:layout_below="@id/linear1"
+        android:layout_above="@id/linear2"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true">
+        <GridView
+            android:id="@+id/gvGame"
+            android:layout_gravity="center"
+            android:scrollbars="none"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:horizontalSpacing="0dp"
+            android:verticalSpacing="0dp"
+            android:numColumns="20"/>
+    </FrameLayout>
+    <LinearLayout
+        android:id="@+id/linear2"
+        android:layout_alignParentBottom="true"
+        android:gravity="center_vertical"
+        android:background="@color/orange"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:padding="10dp"
+        android:layout_height="wrap_content">
+
+        <de.hdodenhof.circleimageview.CircleImageView xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/avatar_me"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/user"
+            app:civ_border_color="#EEEFF1"
+            app:civ_circle_background_color="@color/white"
+            app:civ_border_width="6dp" />
+
+        <TextView
+            android:id="@+id/name_me"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginLeft="20dp"
+            android:text="Bản thân"
+            android:textColor="@color/white"
+            android:textSize="25dp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</RelativeLayout>
