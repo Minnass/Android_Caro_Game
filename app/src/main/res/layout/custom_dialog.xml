@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_margin="25dp"
+    android:padding="5dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_diaglog"
+    android:gravity="center">
+
+    <TextView
+        android:padding="10dp"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:background="@drawable/bg_yellow_coner_topleft_topright"
+        android:text="Xác nhận vào phòng"
+        android:textSize="25dp"
+        android:textStyle="bold"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:gravity="center"
+        android:textStyle="bold"
+        android:layout_margin="15dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20dp"
+        android:text="Bạn có muốn vào phòng hay không ?"/>
+ <LinearLayout
+     android:gravity="center_horizontal"
+     android:orientation="horizontal"
+     android:layout_width="match_parent"
+     android:layout_height="wrap_content">
+     <TextView
+         android:gravity="center"
+         android:id="@+id/accept_diaglog"
+         android:background="@drawable/bg_yellow_button"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:textStyle="bold"
+         android:text="Đồng ý"
+         android:padding="5dp"
+         android:textColor="@color/white"
+         android:textSize="20dp"/>
+     <TextView
+         android:textColor="@color/white"
+         android:padding="5dp"
+         android:textStyle="bold"
+         android:gravity="center"
+         android:id="@+id/cancel_diaglog"
+         android:layout_marginLeft="30dp"
+         android:background="@drawable/bg_yellow_button"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:text="Thoát"
+         android:textSize="20dp"/>
+
+ </LinearLayout>
+</LinearLayout>
