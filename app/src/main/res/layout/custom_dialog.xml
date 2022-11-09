@@ -35,7 +35,7 @@
      <TextView
          android:gravity="center"
          android:id="@+id/accept_diaglog"
-         android:background="@drawable/bg_yellow_button"
+         android:background="@drawable/btn_gradient"
          android:layout_width="wrap_content"
          android:layout_height="wrap_content"
          android:textStyle="bold"
@@ -50,7 +50,7 @@
          android:gravity="center"
          android:id="@+id/cancel_diaglog"
          android:layout_marginLeft="30dp"
-         android:background="@drawable/bg_yellow_button"
+         android:background="@drawable/btn_gradient"
          android:layout_width="wrap_content"
          android:layout_height="wrap_content"
          android:text="Thoát"
