@@ -5,20 +5,18 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#D18B24"
+    android:background="#010912"
     android:gravity="center_horizontal"
     android:id="@+id/viewGroup"
 
     tools:context=".Activity.EditInformationActivity">
-    <TextView
-        android:padding="20dp"
-        android:layout_height="wrap_content"
-        android:layout_width="match_parent"
-        android:background="#F3D7D7"
-        android:text="LABEL"
-        android:textSize="25sp"/>
+  <ImageView
+      android:layout_marginTop="30dp"
+      android:layout_height="130dp"
+      android:layout_width="match_parent"
+      android:src="@drawable/banner_editprofile"/>
     <de.hdodenhof.circleimageview.CircleImageView
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="5dp"
         android:layout_width="150dp"
         android:layout_height="150dp"
         android:id="@+id/avatar_edit"

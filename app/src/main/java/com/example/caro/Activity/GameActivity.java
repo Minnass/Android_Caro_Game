@@ -5,16 +5,21 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -95,7 +100,7 @@ public class GameActivity extends AppCompatActivity {
             }
 
             private void congratulate() {
-                Toast.makeText(getApplicationContext(), "found winner", Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), "found winner", Toas`t.LENGTH_LONG).show();
             }
 
             private void nextPlayer() {
