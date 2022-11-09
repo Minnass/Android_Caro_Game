@@ -23,7 +23,6 @@ public class GridViewAdapter extends BaseAdapter {
 
     }
 
-
     @Override
     public int getCount() {
         return board.size();
@@ -47,18 +46,16 @@ public class GridViewAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder viewHolder;
         if (convertView == null) {
-            viewHolder = new ViewHolder();
             LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.item_gameboard, null);
-            viewHolder.picture=convertView.findViewById(R.id.statusPicture);
+            viewHolder = new ViewHolder();
+            viewHolder.picture = convertView.findViewById(R.id.statusPicture);
             convertView.setTag(viewHolder);
-        }
-        else
-        {
+        } else {
             viewHolder = (ViewHolder) convertView.getTag();
         }
-            ItemState itemState=board.get(position);
-            viewHolder.picture.setImageResource(itemState.getImage());
+        ItemState itemState = board.get(position);
+        viewHolder.picture.setImageResource(itemState.getImage());
         return convertView;
     }
 }

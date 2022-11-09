@@ -47,11 +47,10 @@
             android:id="@+id/gvGame"
             android:layout_gravity="center"
             android:scrollbars="none"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:horizontalSpacing="0dp"
-            android:verticalSpacing="0dp"
-            android:numColumns="20"/>
+            android:verticalSpacing="0dp"/>
     </FrameLayout>
     <LinearLayout
         android:id="@+id/linear2"
