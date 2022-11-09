@@ -16,6 +16,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import com.example.caro.BlueToothService.BluetoothService;
 import com.example.caro.Model.User;
@@ -26,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MenuGameActivity extends AppCompatActivity {
-    Button Discover, enable,setting;
+   TextView findRoom, createRoom,setting,exit,twoPlayer;
     private static final String TAG = "MenuGameActivity";
     public static BluetoothService mBluetoothService;
     private final int PERMISSION_SCAN = 1;
@@ -43,7 +44,6 @@ public class MenuGameActivity extends AppCompatActivity {
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.BLUETOOTH_SCAN,
                 Manifest.permission.BLUETOOTH_ADVERTISE
-
         };
         requestPermissions(permission, 6);
     }
@@ -63,13 +63,13 @@ public class MenuGameActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         //CheckhoiTao
-        initUser();
-        mBluetoothService = new BluetoothService(this);
+        initPermission();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_menu_game);
         Mapping();
-        initPermission();
-        enable.setOnClickListener(new View.OnClickListener() {
+        initUser();
+        mBluetoothService = new BluetoothService(this);
+        createRoom.setOnClickListener(new View.OnClickListener() {
             @SuppressLint("SupportAnnotationUsage")
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
@@ -77,7 +77,7 @@ public class MenuGameActivity extends AppCompatActivity {
                 btnEnableDisable_Discoverable();
             }
         });
-        Discover.setOnClickListener(new View.OnClickListener() {
+        findRoom.setOnClickListener(new View.OnClickListener() {
             @SuppressLint("SupportAnnotationUsage")
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
@@ -92,11 +92,25 @@ public class MenuGameActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        exit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+        twoPlayer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //Intent Game 2 nguoi choi
+            }
+        });
     }
     void Mapping() {
-        Discover = findViewById(R.id.btnFindUnpairedDevices);
-        enable = findViewById(R.id.btnDiscoverable_on_off);
-        setting=findViewById(R.id.button);
+        findRoom = findViewById(R.id.btn_match);
+        createRoom = findViewById(R.id.btn_createRoom);
+        setting=findViewById(R.id.btn_modify);
+        exit=findViewById(R.id.btn_quit);
+        twoPlayer=findViewById(R.id.btn_play);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)

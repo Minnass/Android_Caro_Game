@@ -1,7 +1,6 @@
 package com.example.caro.Activity;
 
 
-
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -45,7 +44,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import  static  com.example.caro.Activity.MenuGameActivity.user;
+import static com.example.caro.Activity.MenuGameActivity.user;
 
 public class EditInformationActivity extends AppCompatActivity {
 
@@ -111,21 +110,7 @@ public class EditInformationActivity extends AppCompatActivity {
 
             }
         });
-        sex.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(RadioGroup group, int checkedId) {
-                switch (checkedId) {
-                    case R.id.male: {
-                      MenuGameActivity.user.setSex("Nam");
-                        break;
-                    }
-                    case R.id.female: {
-                     MenuGameActivity.user.setSex("Nữ");
-                        break;
-                    }
-                }
-            }
-        });
+
         //Lấy dữ liệu đã lưu trước đó
         initUI();
         //set Disable Edittext when touch outside
@@ -147,7 +132,6 @@ public class EditInformationActivity extends AppCompatActivity {
         sex = findViewById(R.id.sex);
         //default radio group is male
         sex.check(male.getId());
-        MenuGameActivity.user.setSex("Nam");
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -236,12 +220,15 @@ public class EditInformationActivity extends AppCompatActivity {
         if (!MySharedPerferences.isSavedBefore(EditInformationActivity.this)) {
             return;
         }
-        name.setText(MySharedPerferences.getValue(EditInformationActivity.this, "name"));
-        String temp = MySharedPerferences.getValue(EditInformationActivity.this, "sex");
-        if (temp == "Nam") sex.check(R.id.male);
-        else sex.check(R.id.female);
-        String imagePath=MySharedPerferences.getValue(EditInformationActivity.this,"imagePath");
-        File savedAvatar =  new File(imagePath, "avatar.jpg");
+        name.setText(user.getName());
+        String temp = user.getSex();
+        if (temp.equals("Nam")) {
+            sex.check(R.id.male);
+        } else {
+            sex.check(R.id.female);
+        }
+        String imagePath = user.getPathImage();
+        File savedAvatar = new File(imagePath, "avatar.jpg");
         try {
             Bitmap savedBitmap = BitmapFactory.decodeStream(new FileInputStream(savedAvatar));
             avatar.setImageBitmap(savedBitmap);
@@ -252,10 +239,8 @@ public class EditInformationActivity extends AppCompatActivity {
 
     void saveInformation() {
         //luu ten va gioi tinh
-
+        //
         MySharedPerferences.deleteBefore(EditInformationActivity.this);
-        MySharedPerferences.setValue(EditInformationActivity.this, "name", MenuGameActivity.user.getName());
-        MySharedPerferences.setValue(EditInformationActivity.this, "sex", MenuGameActivity.user.getSex());
 
         //luu hinh anh
 
@@ -267,7 +252,6 @@ public class EditInformationActivity extends AppCompatActivity {
             out = new FileOutputStream(mypath);
             Bitmap bitmap = ((BitmapDrawable) avatar.getDrawable()).getBitmap();
             bitmap.compress(Bitmap.CompressFormat.WEBP, 75, out);
-            // avatarUser1.setImageBitmap(bitmap);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -277,11 +261,18 @@ public class EditInformationActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        MySharedPerferences.setValue(EditInformationActivity.this, "imagePath", directory.getAbsolutePath());
         //update user fromGameActivity
-      MenuGameActivity.user.setPathImage(directory.getAbsolutePath());
-      MenuGameActivity.user.setName(name.getText().toString());
+       user.setPathImage(directory.getAbsolutePath());
+        user.setName(name.getText().toString());
+        if (sex.getCheckedRadioButtonId() == male.getId()) {
+            user.setSex("Nam");
+        } else {
+            user.setSex("Nữ");
+        }
+        MySharedPerferences.setValue(EditInformationActivity.this, "name", user.getName());
+        MySharedPerferences.setValue(EditInformationActivity.this, "sex", user.getSex());
+        MySharedPerferences.setValue(EditInformationActivity.this, "imagePath", directory.getAbsolutePath());
+
         //Cập nhật lại lần đầu setting nhân vật =fasle;
         MySharedPerferences.setSavedBefore(EditInformationActivity.this);
     }

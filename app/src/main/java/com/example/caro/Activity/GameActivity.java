@@ -5,16 +5,21 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -30,16 +35,15 @@ import java.util.List;
 import  static  com.example.caro.Activity.MenuGameActivity.mBluetoothService;
 public class GameActivity extends AppCompatActivity {
 
-
+    public static  final String YOU_LOSE="@AAAA@@FH@H@@@A@";
     public static final int STATUS_EMPTY = 0;
     public static final int STATUS_USER1 = 1;
     public static final int STATUS_USER2 = 2;
 
     public static final int MESSAGE_GAME = 1;
     public static final int MESSAGE_IMAGE = 2;
-    public static final int MESSAGE_ENDGAME = 3;
-    public static final int MESSAGE_CHAT = 4;
-    public static final int MESSAGE_BLUETOOTH = 5;
+    public static final int MESSAGE_CHAT = 3;
+    public static final int MESSAGE_BLUETOOTH =4;
 
     public static final int success = 1;
     public static final int fail = 0;
@@ -53,6 +57,10 @@ public class GameActivity extends AppCompatActivity {
 
     private boolean yourTurn = false;
     private boolean startGame=false;
+
+    Button sendbtn,sendImage;
+    EditText message;
+    ImageView imageView;
 
     @SuppressLint("HandlerLeak")
     @Override
@@ -97,12 +105,15 @@ public class GameActivity extends AppCompatActivity {
                         break;
                     }
                     case MESSAGE_CHAT: {
+                        Log.d("MainActivity",(String) msg.obj);
+                        Toast.makeText(GameActivity.this,(String)msg.obj, Toast.LENGTH_SHORT).show();
                         break;
                     }
                     case MESSAGE_IMAGE: {
-                        break;
-                    }
-                    case MESSAGE_ENDGAME: {
+                        byte[]readbuff=(byte[]) msg.obj;
+                        Toast.makeText(GameActivity.this, String.valueOf(readbuff.length), Toast.LENGTH_SHORT).show();
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(readbuff,0,msg.arg1);
+                        imageView.setImageBitmap(bitmap);
                         break;
                     }
                     case MESSAGE_BLUETOOTH: {
@@ -113,7 +124,6 @@ public class GameActivity extends AppCompatActivity {
                         }
                         else if(msg.arg1==2&&msg.arg2==success)
                         {
-                            // yourTurn=true;
                         }
                         break;
                     }
@@ -126,6 +136,25 @@ public class GameActivity extends AppCompatActivity {
         setContentView(R.layout.activity_game);
         mappingID();
         initGameBoard();
+        sendbtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mBluetoothService.sendString(message.getText().toString());
+            }
+        });
+        sendImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Bitmap bitmap=BitmapFactory.decodeResource(getResources(),R.drawable.grass);
+                        mBluetoothService.sendImage(bitmap);
+                    }
+                }).start();
+
+            }
+        });
     }
 
     void mappingID() {
@@ -134,6 +163,10 @@ public class GameActivity extends AppCompatActivity {
         yourImg = findViewById(R.id.avatar_me);
         competitorName = findViewById(R.id.name_competitor);
         yourName = findViewById(R.id.name_me);
+        sendbtn=findViewById(R.id.sendText);
+        message=findViewById(R.id.message);
+        imageView=findViewById(R.id.image_game);
+        sendImage=findViewById(R.id.sendImage);
     }
 
     void initGameBoard() {
@@ -161,7 +194,8 @@ public class GameActivity extends AppCompatActivity {
                 yourTurn = false;
                 //Gui messa
                 // competitorImg.setBackgroundResource(R.color.teal_200);
-                mBluetoothService.write(String.valueOf(position).getBytes(StandardCharsets.UTF_8));
+                mBluetoothService.sendInt(position);
+             //   mBluetoothService.write(String.valueOf(position).getBytes(StandardCharsets.UTF_8));
                 if (checkWinner(position)) {
                     //Ban da thang
                     //send to Doi phuong

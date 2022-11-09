@@ -49,8 +49,6 @@ public class ListRoomActivity extends AppCompatActivity {
             public void handleMessage(@NonNull Message msg) {
                 switch (msg.what) {
                     case GAME_CREATING: {
-                        Bundle bundle=new Bundle();
-                        bundle.putBoolean("connected",true);
                         Intent intent = new Intent(ListRoomActivity.this, GameActivity.class);
                         startActivity(intent);
                         finish();
