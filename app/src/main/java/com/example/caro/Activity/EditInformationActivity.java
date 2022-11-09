@@ -1,9 +1,6 @@
 package com.example.caro.Activity;
 
 
-
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -45,7 +42,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import  static  com.example.caro.Activity.MenuGameActivity.user;
 
 public class EditInformationActivity extends AppCompatActivity {
 
@@ -65,37 +61,21 @@ public class EditInformationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_information);
         mappingID();
-        galleryLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), new ActivityResultCallback<Uri>() {
-            @Override
-            public void onActivityResult(Uri result) {
-                avatar.setImageURI(result);
+        galleryLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), result -> avatar.setImageURI(result));
+        cameraLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                Bundle bundle = result.getData().getExtras();
+                Bitmap bitmap = (Bitmap) bundle.get("data");
+                avatar.setImageBitmap(bitmap);
             }
         });
-        cameraLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
-            @Override
-            public void onActivityResult(ActivityResult result) {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    Bundle bundle = result.getData().getExtras();
-                    Bitmap bitmap = (Bitmap) bundle.get("data");
-                    avatar.setImageBitmap(bitmap);
-                }
-            }
-        });
-        exit.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
-        save.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (name.getText().toString().equals("")) {
-                    Toast.makeText(EditInformationActivity.this, "Nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
-                } else {
-                    saveInformation();
-                    Toast.makeText(EditInformationActivity.this, "Đã lưu thành công", Toast.LENGTH_SHORT).show();
-                }
+        exit.setOnClickListener(v -> finish());
+        save.setOnClickListener(v -> {
+            if (name.getText().toString().equals("")) {
+                Toast.makeText(EditInformationActivity.this, "Nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
+            } else {
+                saveInformation();
+                Toast.makeText(EditInformationActivity.this, "Đã lưu thành công", Toast.LENGTH_SHORT).show();
             }
         });
         camera.setOnClickListener(new View.OnClickListener() {
@@ -116,11 +96,11 @@ public class EditInformationActivity extends AppCompatActivity {
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 switch (checkedId) {
                     case R.id.male: {
-                      MenuGameActivity.user.setSex("Nam");
+                        MenuGameActivity.user.setSex("Nam");
                         break;
                     }
                     case R.id.female: {
-                     MenuGameActivity.user.setSex("Nữ");
+                        MenuGameActivity.user.setSex("Nữ");
                         break;
                     }
                 }
@@ -156,7 +136,7 @@ public class EditInformationActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         switch (requestCode) {
-            case CAMERA_PEMISSION: {
+            case CAMERA_PEMISSION:
                 if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                     if (intent.resolveActivity(getPackageManager()) != null) {
@@ -171,7 +151,6 @@ public class EditInformationActivity extends AppCompatActivity {
                     }
                 }
                 break;
-            }
         }
     }
 
@@ -238,10 +217,10 @@ public class EditInformationActivity extends AppCompatActivity {
         }
         name.setText(MySharedPerferences.getValue(EditInformationActivity.this, "name"));
         String temp = MySharedPerferences.getValue(EditInformationActivity.this, "sex");
-        if (temp == "Nam") sex.check(R.id.male);
+        if (temp.equals("Nam")) sex.check(R.id.male);
         else sex.check(R.id.female);
-        String imagePath=MySharedPerferences.getValue(EditInformationActivity.this,"imagePath");
-        File savedAvatar =  new File(imagePath, "avatar.jpg");
+        String imagePath = MySharedPerferences.getValue(EditInformationActivity.this, "imagePath");
+        File savedAvatar = new File(imagePath, "avatar.jpg");
         try {
             Bitmap savedBitmap = BitmapFactory.decodeStream(new FileInputStream(savedAvatar));
             avatar.setImageBitmap(savedBitmap);
@@ -280,8 +259,8 @@ public class EditInformationActivity extends AppCompatActivity {
 
         MySharedPerferences.setValue(EditInformationActivity.this, "imagePath", directory.getAbsolutePath());
         //update user fromGameActivity
-      MenuGameActivity.user.setPathImage(directory.getAbsolutePath());
-      MenuGameActivity.user.setName(name.getText().toString());
+        MenuGameActivity.user.setPathImage(directory.getAbsolutePath());
+        MenuGameActivity.user.setName(name.getText().toString());
         //Cập nhật lại lần đầu setting nhân vật =fasle;
         MySharedPerferences.setSavedBefore(EditInformationActivity.this);
     }
