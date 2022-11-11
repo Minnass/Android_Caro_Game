@@ -19,9 +19,9 @@ public class ItemState {
         this.status = status;
         switch (status)
         {
-            case 0: image = R.drawable.status_empty; break;
-            case 1: image = R.drawable.status_user1; break;
-            case 2: image = R.drawable.status_user2; break;
+            case 0: image = R.drawable.field_empty; break;
+            case 1: image = R.drawable.field_player; break;
+            case 2: image = R.drawable.field_opponent; break;
         }
     }
 

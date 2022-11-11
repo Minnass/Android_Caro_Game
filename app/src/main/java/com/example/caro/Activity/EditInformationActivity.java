@@ -69,10 +69,12 @@ public class EditInformationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_information);
         mappingID();
-        galleryLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), new ActivityResultCallback<Uri>() {
-            @Override
-            public void onActivityResult(Uri result) {
-                avatar.setImageURI(result);
+        galleryLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), result -> avatar.setImageURI(result));
+        cameraLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                Bundle bundle = result.getData().getExtras();
+                Bitmap bitmap = (Bitmap) bundle.get("data");
+                avatar.setImageBitmap(bitmap);
             }
         });
         cameraLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
@@ -116,7 +118,21 @@ public class EditInformationActivity extends AppCompatActivity {
 
             }
         });
-
+        sex.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                switch (checkedId) {
+                    case R.id.male: {
+                        MenuGameActivity.user.setSex("Nam");
+                        break;
+                    }
+                    case R.id.female: {
+                        MenuGameActivity.user.setSex("Nữ");
+                        break;
+                    }
+                }
+            }
+        });
         //Lấy dữ liệu đã lưu trước đó
         initUI();
         //set Disable Edittext when touch outside
@@ -182,7 +198,7 @@ public class EditInformationActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         switch (requestCode) {
-            case CAMERA_PEMISSION: {
+            case CAMERA_PEMISSION:
                 if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                     if (intent.resolveActivity(getPackageManager()) != null) {
@@ -197,7 +213,6 @@ public class EditInformationActivity extends AppCompatActivity {
                     }
                 }
                 break;
-            }
         }
     }
 

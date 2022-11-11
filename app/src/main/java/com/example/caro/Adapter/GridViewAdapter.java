@@ -7,25 +7,22 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 
-
-import com.example.caro.Model.ItemState;
+import com.example.caro.Caro.Board;
+import com.example.caro.Caro.Field;
 import com.example.caro.R;
-
-import java.util.List;
 
 public class GridViewAdapter extends BaseAdapter {
     private Context context;
-    private List<ItemState> board;
+    private Board board;
 
-    public GridViewAdapter(Context context, List<ItemState> board) {
+    public GridViewAdapter(Context context, Board board) {
         this.context = context;
         this.board = board;
-
     }
 
     @Override
     public int getCount() {
-        return board.size();
+        return board.getDimensionX() * board.getDimensionY();
     }
 
     @Override
@@ -39,7 +36,11 @@ public class GridViewAdapter extends BaseAdapter {
     }
 
     private class ViewHolder {
-        ImageView picture;
+        ImageView image;
+
+        public ViewHolder(View view) {
+            image = view.findViewById(R.id.img_field);
+        }
     }
 
     @Override
@@ -47,15 +48,24 @@ public class GridViewAdapter extends BaseAdapter {
         ViewHolder viewHolder;
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = inflater.inflate(R.layout.item_gameboard, null);
-            viewHolder = new ViewHolder();
-            viewHolder.picture = convertView.findViewById(R.id.statusPicture);
+            convertView = inflater.inflate(R.layout.cell, null);
+            viewHolder = new ViewHolder(convertView);
             convertView.setTag(viewHolder);
         } else {
             viewHolder = (ViewHolder) convertView.getTag();
         }
-        ItemState itemState = board.get(position);
-        viewHolder.picture.setImageResource(itemState.getImage());
+
+        Field field = board.getField(position);
+        int image;
+        if (field == Field.EMPTY) {
+            image = R.drawable.field_empty;
+        } else if (field == Field.PLAYER) {
+            image = R.drawable.field_player;
+        } else {
+            image = R.drawable.field_opponent;
+        }
+        viewHolder.image.setImageResource(image);
         return convertView;
     }
 }
+
