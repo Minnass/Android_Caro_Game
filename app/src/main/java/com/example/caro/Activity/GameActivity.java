@@ -56,7 +56,6 @@ public class GameActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
-
         player = new Human();
         opponent = new Human();
         if (Util.randomBit()) {
@@ -100,7 +99,7 @@ public class GameActivity extends AppCompatActivity {
             }
 
             private void congratulate() {
-                Toast.makeText(getApplicationContext(), "found winner", Toas`t.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), "found winner", Toast.LENGTH_LONG).show();
             }
 
             private void nextPlayer() {

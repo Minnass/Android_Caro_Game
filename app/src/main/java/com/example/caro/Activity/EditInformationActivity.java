@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.DialogInterface;
@@ -20,11 +21,13 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -38,11 +41,13 @@ import com.example.caro.R;
 import com.example.caro.Util.HideSoftKeyBoard;
 import com.example.caro.Util.MySharedPerferences;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import static com.example.caro.Activity.MenuGameActivity.user;
 
@@ -92,8 +97,9 @@ public class EditInformationActivity extends AppCompatActivity {
                 if (name.getText().toString().equals("")) {
                     Toast.makeText(EditInformationActivity.this, "Nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
                 } else {
-                    saveInformation();
-                    Toast.makeText(EditInformationActivity.this, "Đã lưu thành công", Toast.LENGTH_SHORT).show();
+                  //  saveInformation();
+                //    Toast.makeText(EditInformationActivity.this, "Đã lưu thành công", Toast.LENGTH_SHORT).show();
+                text();
                 }
             }
         });
@@ -116,6 +122,42 @@ public class EditInformationActivity extends AppCompatActivity {
         //set Disable Edittext when touch outside
         HideSoftKeyBoard hideSoftKeyBoard = new HideSoftKeyBoard(EditInformationActivity.this);
         hideSoftKeyBoard.setupUI(viewGroup);
+    }
+
+    void text() {
+        File file;
+        FileInputStream in = null;
+        String filePath = user.getPathImage() + "/avatar.jpg";
+        try {
+            file =new File(filePath);
+            in = new FileInputStream(filePath);
+            Log.d("Main",file.length()+"");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        byte[] buffer=new byte[2200];
+        int number=0;
+        while (true) {
+            int k=0;
+            byte[] dataToSend = new byte[512];
+            try {
+                 k=in.read(dataToSend,0,512);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if(k==-1)
+            {
+                Log.d("MainNum", String.valueOf(number));
+                break;
+            }
+            int temp=buffer.length;
+            System.arraycopy(dataToSend,0,buffer,number,k);
+            number+=k;
+        }
+
+        Bitmap bitmap = BitmapFactory.decodeByteArray(buffer,0,number);
+        avatar.setImageBitmap(bitmap);
+        Toast.makeText(this, "Thanh cong", Toast.LENGTH_SHORT).show();
     }
 
     void mappingID() {
@@ -262,7 +304,7 @@ public class EditInformationActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         //update user fromGameActivity
-       user.setPathImage(directory.getAbsolutePath());
+        user.setPathImage(directory.getAbsolutePath());
         user.setName(name.getText().toString());
         if (sex.getCheckedRadioButtonId() == male.getId()) {
             user.setSex("Nam");

@@ -135,7 +135,7 @@ public class MenuGameActivity extends AppCompatActivity {
             }).start();
             Bundle bundle = new Bundle();
             bundle.putBoolean("connected", true);
-            Intent intent1 = new Intent(MenuGameActivity.this, GameActivity.class);
+            Intent intent1 = new Intent(MenuGameActivity.this, GameBluetoothActivity.class);
             intent1.putExtras(bundle);
             startActivity(intent1);
             mBluetoothService.start();

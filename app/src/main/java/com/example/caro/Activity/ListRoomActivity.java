@@ -49,7 +49,7 @@ public class ListRoomActivity extends AppCompatActivity {
             public void handleMessage(@NonNull Message msg) {
                 switch (msg.what) {
                     case GAME_CREATING: {
-                        Intent intent = new Intent(ListRoomActivity.this, GameActivity.class);
+                        Intent intent = new Intent(ListRoomActivity.this, GameBluetoothActivity.class);
                         startActivity(intent);
                         finish();
                         break;
