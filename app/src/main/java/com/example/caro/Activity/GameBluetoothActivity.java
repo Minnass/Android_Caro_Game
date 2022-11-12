@@ -1,17 +1,24 @@
 package com.example.caro.Activity;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -26,44 +33,45 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.caro.Adapter.GridViewAdapter;
-import com.example.caro.Model.ItemState;
+import com.example.caro.BlueToothService.BluetoothService;
+import com.example.caro.Caro.Board;
+import com.example.caro.Caro.Field;
+import com.example.caro.Caro.Position;
 import com.example.caro.R;
 import com.example.caro.Util.ImageFromInternal;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-
 import static com.example.caro.Activity.MenuGameActivity.mBluetoothService;
 import static com.example.caro.Activity.MenuGameActivity.user;
-import static com.example.caro.BlueToothService.BluetoothService.SEND_IMAGE;
-import static com.example.caro.BlueToothService.BluetoothService.SEND_INT;
-import static com.example.caro.BlueToothService.BluetoothService.SEND_STRING;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 
 public class GameBluetoothActivity extends AppCompatActivity {
 
-    public static final int STATUS_EMPTY = 0;
-    public static final int STATUS_USER1 = 1;
-    public static final int STATUS_USER2 = 2;
-
-    public static final int MESSAGE_GAME = 1;
-    public static final int MESSAGE_IMAGE = 2;
-    public static final int MESSAGE_CHAT = 3;
-    public static final int MESSAGE_BLUETOOTH = 4;
-
+    public static final int MESSAGE_POSTION = 1;
+    public static final int MESSAGE_IMAGE_AVATAR = 2;
+    public static final int MESSAGE_IMAGE_CHAT = 3;
+    public static final int MESSAGE_STRING_CHAT = 4;
+    public static final int MESSAGE_STRING_NAME = 5;
+    public static final int MESSAGE_BLUETOOTH = 6;
+    public static final int MESSAGE_YOU_LOSE = 7;
+    public static final int MESSAGE_EXIT = 8;
+    public static final int MESSAGE_AGAIN = 9;
+    public static final int MESSAGE_ACCEPT=10;
     public static final int success = 1;
     public static final int fail = 0;
 
     public static Handler mGameHandler;
+    private Board board;
     private GridView mBoadGame;
-    private List<ItemState> mItemList;
     private GridViewAdapter mGridViewAdapter;
     private TextView competitorName, yourName;
     private ImageView competitorImg, yourImg;
 
     private boolean yourTurn = false;
     private boolean startGame = false;
-
+    private Position lastMove;
     Button sendbtn, sendImage;
     EditText message;
     ImageView imageView;
@@ -95,36 +103,96 @@ public class GameBluetoothActivity extends AppCompatActivity {
             dialog.show();
         } else {
             startGame = true;
+            mBluetoothService.sendString(user.getName(), BluetoothService.SEND_STRING_NAME);
         }
         mGameHandler = new Handler() {
             @Override
             public void handleMessage(@NonNull Message msg) {
                 switch (msg.what) {
-                    case MESSAGE_GAME: {
-                        int possion = (int) msg.obj;
-                        mItemList.get(possion).setStatus(STATUS_USER2);
+                    case MESSAGE_POSTION: {
+                        int position = (int) msg.obj;
+                        Position receivedPosition = new Position(position % board.getDimensionX(), position / board.getDimensionY());
+                        board.fillPostion(receivedPosition, Field.OPPONENT);
                         mGridViewAdapter.notifyDataSetChanged();
                         yourTurn = true;
                         break;
                     }
-                    case MESSAGE_CHAT: {
+                    case MESSAGE_STRING_CHAT: {
                         //Log.d("MainActivity", (String) msg.obj);
                         Toast.makeText(GameBluetoothActivity.this, (String) msg.obj, Toast.LENGTH_SHORT).show();
                         break;
                     }
-                    case MESSAGE_IMAGE: {
+                    case MESSAGE_STRING_NAME: {
+                        Log.d("Main", (String) msg.obj);
+                        competitorName.setText((String) msg.obj);
+                        if (isSerVer) {
+                            mBluetoothService.sendString(user.getName(), BluetoothService.SEND_STRING_NAME);
+                        }
+                        if (!isSerVer) {
+                            sendAvatar();
+                        }
+                        break;
+                    }
+                    case MESSAGE_IMAGE_AVATAR: {
+                        byte[] readbuff = (byte[]) msg.obj;
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(readbuff, 0, msg.arg1);
+                        competitorImg.setImageBitmap(bitmap);
+                        if (isSerVer) {
+                            sendAvatar();
+                        }
+                        break;
+                    }
+                    case MESSAGE_IMAGE_CHAT: {
                         byte[] readbuff = (byte[]) msg.obj;
                         Bitmap bitmap = BitmapFactory.decodeByteArray(readbuff, 0, msg.arg1);
                         imageView.setImageBitmap(bitmap);
                         break;
                     }
+                    case MESSAGE_YOU_LOSE:
+                    {
+                        showDiaglogLoser();
+                        break;
+                    }
+                    case MESSAGE_AGAIN:
+                    {
+                        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(GameBluetoothActivity.this)
+                                .setTitle("Thông báo")
+                                .setMessage("Đối thủ muốn chơi lại");
+                        alertDialogBuilder.setPositiveButton("Đồng ý",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface arg0, int arg1) {
+                                      mBluetoothService.sendString(BluetoothService.SEND_PLAY_AGAIN,BluetoothService.SEND_PLAY_AGAIN);
+                                    }
+                                });
+                        alertDialogBuilder.setNegativeButton("Hủy", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                mBluetoothService.sendString(BluetoothService.SEND_EXIT,BluetoothService.SEND_EXIT);
+                            }
+                        });
+                        AlertDialog alertDialog = alertDialogBuilder.create();
+                        alertDialog.show();
+                        break;
+                    }
+                    case MESSAGE_ACCEPT:
+                    {
+                        if(startGame)
+                        {
+                            board.reset();
+                            mGridViewAdapter.notifyDataSetChanged();
+                            //dialog_.dismiss();
+                        }
+                        break;
+                    }
+                    case MESSAGE_EXIT:
+                    {
+                        break;
+                    }
                     case MESSAGE_BLUETOOTH: {
                         if (msg.arg1 == 1 && msg.arg2 == success) {
-                            sendYourAvatar();
                             yourTurn = true;
                             startGame = true;
                             dialog.dismiss();
-                        } else if (msg.arg1 == 2 && msg.arg2 == success) {
                         }
                         break;
                     }
@@ -134,32 +202,48 @@ public class GameBluetoothActivity extends AppCompatActivity {
             }
         };
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_game);
+        setContentView(R.layout.activity_game_bluetooth);
         mappingID();
-        initGameBoard();
+        boardInit();
+        if (!user.getName().equals("")) {
+            yourName.setText(user.getName());
+            String imagePath = user.getPathImage();
+            File savedAvatar = new File(imagePath, "avatar.jpg");
+            try {
+                Bitmap savedBitmap = BitmapFactory.decodeStream(new FileInputStream(savedAvatar));
+                yourImg.setImageBitmap(savedBitmap);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+
+        }
         sendbtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mBluetoothService.sendString(message.getText().toString());
+                mBluetoothService.sendString(message.getText().toString(), BluetoothService.SEND_STRING_CHAT);
             }
         });
         sendImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                String filePath = user.getPathImage() + "/avatar.jpg";
+                byte[] bufferImage = ImageFromInternal.readImageFromInternal(filePath);
+                if (bufferImage != null) {
+                    Toast.makeText(GameBluetoothActivity.this, String.valueOf(bufferImage.length), Toast.LENGTH_SHORT).show();
+                }
+//                        Log.d("Main", bufferImage.length + "");
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                   sendYourAvatar();
+                        mBluetoothService.sendImage(bufferImage, BluetoothService.SEND_IMAGE_CHAT);
                     }
                 }).start();
-
             }
         });
     }
 
-
     void mappingID() {
-        mBoadGame = findViewById(R.id.gvGame);
+
         competitorImg = findViewById(R.id.avatar_competitor);
         yourImg = findViewById(R.id.avatar_me);
         competitorName = findViewById(R.id.name_competitor);
@@ -170,174 +254,126 @@ public class GameBluetoothActivity extends AppCompatActivity {
         sendImage = findViewById(R.id.sendImage);
     }
 
-    void initGameBoard() {
-        mItemList = new ArrayList<>();
-        for (int i = 0; i < 400; i++) {
-            mItemList.add(new ItemState(STATUS_EMPTY, R.drawable.status_empty));
-        }
-        mGridViewAdapter = new GridViewAdapter(this, mItemList);
+    private void boardInit() {
+        mBoadGame = findViewById(R.id.board_);
+        mBoadGame.setNumColumns(20);
+        board = new Board(20, 20);
+        mGridViewAdapter = new GridViewAdapter(this, board);
         mBoadGame.setAdapter(mGridViewAdapter);
         mBoadGame.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
                 if (!yourTurn || !startGame) {
-                    //Toas kp
                     Toast.makeText(GameBluetoothActivity.this, "Chưa đến lượt!!", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                if (mItemList.get(position).getStatus() != STATUS_EMPTY) {
-                    //Toast o nay da duoc danh
+                if (board.getField(position) != Field.EMPTY) {
                     return;
-                } else {
-                    mItemList.get(position).setStatus(STATUS_USER1);
-                    mGridViewAdapter.notifyDataSetChanged();
                 }
+                lastMove = new Position(position % board.getDimensionX(), position / board.getDimensionY());
+                boolean a = board.fillPostion(lastMove, Field.PLAYER);
+                mGridViewAdapter.notifyDataSetChanged();
                 yourTurn = false;
-                //Gui messa
-                // competitorImg.setBackgroundResource(R.color.teal_200);
+                //Gui vi tri cho doi phuong
                 mBluetoothService.sendInt(position);
-                //   mBluetoothService.write(String.valueOf(position).getBytes(StandardCharsets.UTF_8));
-                if (checkWinner(position)) {
-                    //Ban da thang
-                    //send to Doi phuong
+                if (board.findWinner(lastMove) == Field.PLAYER) {
+                    mBluetoothService.sendString(BluetoothService.YOU_LOSE, BluetoothService.YOU_LOSE);
+//                    showDiaglogWinner();
                 }
             }
+
         });
     }
 
-    boolean checkWinner(int position) {
-        int xCoordinate = position % 20;
-        int yCoordinate = position / 20;
-        //Check horizental
-        int count = 1;
-        int i = 1;
-        while ((xCoordinate - i) >= 0 && mItemList.get(yCoordinate * 20 + (xCoordinate - i)).getStatus() == STATUS_USER1) {
-            count++;
-            i++;
-        }
-        i = 1;
-        while ((xCoordinate + i) < 20 && mItemList.get(yCoordinate * 20 + (xCoordinate + i)).getStatus() == STATUS_USER1) {
-            count++;
-            i++;
-        }
-        if (count == 5) return true;
-        //Check Vertical
-        count = 1;
-        i = 1;
-        while ((yCoordinate - i >= 0) && mItemList.get(xCoordinate + (yCoordinate - i) * 20).getStatus() == STATUS_USER1) {
-            count++;
-            i++;
-        }
-        i = 1;
-        while ((yCoordinate + i < 20) && mItemList.get(xCoordinate + (yCoordinate + i) * 20).getStatus() == STATUS_USER1) {
-            count++;
-            i++;
-        }
-        if (count == 5) return true;
-        //CheckXeo /
-        count = 1;
-        i = 1;
-        while ((xCoordinate + i) < 20 && (yCoordinate - i) >= 0 && mItemList.get((yCoordinate - i) * 20 + xCoordinate + i).getStatus() == STATUS_USER1) {
-            i++;
-            count++;
-        }
-        i = 1;
-        while ((xCoordinate - i) >= 0 && (yCoordinate + i) < 20 && mItemList.get(xCoordinate - i + 20 * (yCoordinate + i)).getStatus() == STATUS_USER1) {
-            i++;
-            count++;
-        }
-        if (count == 5) return true;
-        //CheckXeo \
-        count = 1;
-        i = 1;
-        while ((xCoordinate - i) >= 0 && (yCoordinate - i) >= 0 && mItemList.get((yCoordinate - i) * 20 + xCoordinate - i).getStatus() == STATUS_USER1) {
-            i++;
-            count++;
-        }
-        i = 1;
-        while ((xCoordinate + i) < 20 && (yCoordinate + i) < 20 && mItemList.get(xCoordinate + i + 20 * (yCoordinate + i)).getStatus() == STATUS_USER1) {
-            i++;
-            count++;
-        }
-        if (count == 5) return true;
-        return false;
-    }
-
-    private void sendYourAvatar() {
-        byte[] bufferImage=null;
+    void sendAvatar() {
         String filePath = user.getPathImage() + "/avatar.jpg";
-        ImageFromInternal.readImageFromInternal(filePath,bufferImage);
-        mBluetoothService.sendImage(bufferImage);
+        byte[] bufferImage = ImageFromInternal.readImageFromInternal(filePath);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                mBluetoothService.sendImage(bufferImage, BluetoothService.SEND_IMAGE_AVATAR);
+            }
+        }).start();
+
     }
 
-//    void showDiaglogWinner()
-//    {
-//        final Dialog winnerDiaglog=new Dialog(this);
-//        winnerDiaglog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-//        winnerDiaglog.setContentView(R.layout.winner_diaglog);
-//        Window window = dialog.getWindow();
-//        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
-//        window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-//        WindowManager.LayoutParams windowAttributes = window.getAttributes();
-//        windowAttributes.gravity = Gravity.CENTER;
-//        window.setAttributes(windowAttributes);
-//        winnerDiaglog.setCancelable(false);
-//        TextView button1,button2;
-//        button1 = winnerDiaglog.findViewById(R.id.again);
-//        button2=winnerDiaglog.findViewById(R.id.exit);
-//        button1.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                for(int i=0;i<400;i++)
-//                {
-//                    mItemList.get(i).setStatus(STATUS_EMPTY);
-//                }
-//                //sendRequest
-//                winnerDiaglog.dismiss();
-//            }
-//        });
-//        button2.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                mBluetoothService.Disconnect();
-//                finish();
-//            }
-//        });
-//        winnerDiaglog.show();
-//    }
-//    void showDiaglogLoser()
-//    {
-//        final Dialog loserDiaglog=new Dialog(this);
-//        loserDiaglog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-//        loserDiaglog.setContentView(R.layout.loser_dialog);
-//        Window window = dialog.getWindow();
-//        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
-//        window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-//        WindowManager.LayoutParams windowAttributes = window.getAttributes();
-//        windowAttributes.gravity = Gravity.CENTER;
-//        window.setAttributes(windowAttributes);
-//       loserDiaglog.setCancelable(false);
-//        TextView button1,button2;
-//        button1 = loserDiaglog.findViewById(R.id.again_loser);
-//        button2=loserDiaglog.findViewById(R.id.exit_loser);
-//        button1.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                for(int i=0;i<400;i++)
-//                {
-//                    mItemList.get(i).setStatus(STATUS_EMPTY);
-//                }
-//                //sendRequest
-//                loserDiaglog.dismiss();
-//            }
-//        });
-//        button2.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                mBluetoothService.Disconnect();
-//                finish();
-//            }
-//        });
-//        loserDiaglog.show();
-//    }
+    void showDiaglogWinner() {
+        final Dialog winnerDiaglog = new Dialog(this);
+        winnerDiaglog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        winnerDiaglog.setContentView(R.layout.winner_diaglog);
+        Window window = winnerDiaglog.getWindow();
+        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+        window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        WindowManager.LayoutParams windowAttributes = window.getAttributes();
+        windowAttributes.gravity = Gravity.CENTER;
+        window.setAttributes(windowAttributes);
+        winnerDiaglog.setCancelable(false);
+        TextView button1, button2;
+        button1 = winnerDiaglog.findViewById(R.id.again);
+        button1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                final Dialog dialog_=new Dialog(GameBluetoothActivity.this);
+//                    dialog_.requestWindowFeature(Window.FEATURE_NO_TITLE);
+//                    dialog_.setContentView(R.layout.diaglog_loading);
+//                    Window window = dialog_.getWindow();
+//                    window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+//                    window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+//                    WindowManager.LayoutParams windowAttributes = window.getAttributes();
+//                    windowAttributes.gravity = Gravity.CENTER;
+//                    window.setAttributes(windowAttributes);
+//                    dialog_.setCancelable(false);
+//                    TextView button1;
+//                    button1 = dialog_.findViewById(R.id.cancel_again);
+//                    button1.setOnClickListener(new View.OnClickListener() {
+//                        @Override
+//                        public void onClick(View v) {
+////                            mBluetoothService.Disconnect();
+//                            startGame=false;
+//                            dialog_.dismiss();
+//                        }
+//                    });
+//                    dialog_.show();
+            }
+        });
+        button2 = winnerDiaglog.findViewById(R.id.exit);
+        button2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mBluetoothService.Disconnect();
+                finish();
+            }
+        });
+        winnerDiaglog.show();
+    }
+
+    void showDiaglogLoser() {
+        final Dialog loserDiaglog = new Dialog(this);
+        loserDiaglog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        loserDiaglog.setContentView(R.layout.loser_dialog);
+        Window window = loserDiaglog.getWindow();
+        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+        window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        WindowManager.LayoutParams windowAttributes = window.getAttributes();
+        windowAttributes.gravity = Gravity.CENTER;
+        window.setAttributes(windowAttributes);
+        loserDiaglog.setCancelable(false);
+        TextView button1, button2;
+        button1 = loserDiaglog.findViewById(R.id.again_loser);
+        button2 = loserDiaglog.findViewById(R.id.exit_loser);
+        button1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+            }
+        });
+        button2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mBluetoothService.Disconnect();
+                finish();
+            }
+        });
+        loserDiaglog.show();
+    }
 }

@@ -99,9 +99,8 @@ public class EditInformationActivity extends AppCompatActivity {
                 if (name.getText().toString().equals("")) {
                     Toast.makeText(EditInformationActivity.this, "Nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
                 } else {
-                  //  saveInformation();
-                //    Toast.makeText(EditInformationActivity.this, "Đã lưu thành công", Toast.LENGTH_SHORT).show();
-                text();
+                    saveInformation();
+                    Toast.makeText(EditInformationActivity.this, "Đã lưu thành công", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -140,41 +139,7 @@ public class EditInformationActivity extends AppCompatActivity {
         hideSoftKeyBoard.setupUI(viewGroup);
     }
 
-    void text() {
-        File file;
-        FileInputStream in = null;
-        String filePath = user.getPathImage() + "/avatar.jpg";
-        try {
-            file =new File(filePath);
-            in = new FileInputStream(filePath);
-            Log.d("Main",file.length()+"");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        byte[] buffer=new byte[2200];
-        int number=0;
-        while (true) {
-            int k=0;
-            byte[] dataToSend = new byte[512];
-            try {
-                 k=in.read(dataToSend,0,512);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if(k==-1)
-            {
-                Log.d("MainNum", String.valueOf(number));
-                break;
-            }
-            int temp=buffer.length;
-            System.arraycopy(dataToSend,0,buffer,number,k);
-            number+=k;
-        }
 
-        Bitmap bitmap = BitmapFactory.decodeByteArray(buffer,0,number);
-        avatar.setImageBitmap(bitmap);
-        Toast.makeText(this, "Thanh cong", Toast.LENGTH_SHORT).show();
-    }
 
     void mappingID() {
         viewGroup = findViewById(R.id.viewGroup);

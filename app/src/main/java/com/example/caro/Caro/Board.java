@@ -5,10 +5,20 @@ public class Board {
     private int dimensionY;
     private Field fields[][];
 
+
     public Board(int dimensionX, int dimensionY) {
         this.dimensionX = dimensionX;
         this.dimensionY = dimensionY;
         fields = new Field[dimensionX][dimensionY];
+        for (int i = 0; i < dimensionX; i++) {
+            for (int j = 0; j < dimensionY; j++) {
+                fields[i][j] = Field.EMPTY;
+            }
+        }
+    }
+
+    public void reset()
+    {
         for (int i = 0; i < dimensionX; i++) {
             for (int j = 0; j < dimensionY; j++) {
                 fields[i][j] = Field.EMPTY;

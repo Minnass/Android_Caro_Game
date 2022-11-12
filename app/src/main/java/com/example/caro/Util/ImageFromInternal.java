@@ -7,23 +7,25 @@ import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.example.caro.Activity.GameBluetoothActivity;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class ImageFromInternal {
-    public static void readImageFromInternal(String filePath, byte[] buffer) {
-        File file;
+    public static byte[] readImageFromInternal(String filePath) {
+        File file=null;
         FileInputStream in = null;
         try {
             file = new File(filePath);
             in = new FileInputStream(filePath);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-            return;
         }
-        buffer = new byte[(int) file.length()];
+        byte[] buffer = new byte[(int) file.length()];
+
         int beginPosition = 0;
         int bytes = 0;
         int subLength = 800;
@@ -35,7 +37,7 @@ public class ImageFromInternal {
                 e.printStackTrace();
             }
             if (bytes == -1) {
-                break;
+                return buffer;
             }
             System.arraycopy(dataToSend, 0, buffer, beginPosition, bytes);
             beginPosition += bytes;
