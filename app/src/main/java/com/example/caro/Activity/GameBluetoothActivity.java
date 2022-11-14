@@ -297,7 +297,7 @@ public class GameBluetoothActivity extends AppCompatActivity {
     void showDiaglogWinner() {
         final Dialog winnerDiaglog = new Dialog(this);
         winnerDiaglog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        winnerDiaglog.setContentView(R.layout.winner_diaglog);
+        winnerDiaglog.setContentView(R.layout.dialog_game_winner);
         Window window = winnerDiaglog.getWindow();
         window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
         window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
@@ -347,7 +347,7 @@ public class GameBluetoothActivity extends AppCompatActivity {
     void showDiaglogLoser() {
         final Dialog loserDiaglog = new Dialog(this);
         loserDiaglog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        loserDiaglog.setContentView(R.layout.loser_dialog);
+        loserDiaglog.setContentView(R.layout.dialog_game_loser);
         Window window = loserDiaglog.getWindow();
         window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
         window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));

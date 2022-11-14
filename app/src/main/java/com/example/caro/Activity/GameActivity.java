@@ -2,10 +2,17 @@ package com.example.caro.Activity;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Dialog;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.caro.Adapter.GridViewAdapter;
@@ -25,23 +32,20 @@ public class GameActivity extends AppCompatActivity {
     private Position lastMove;
     GridView mBoardView;
     GridViewAdapter mGridViewAdapter;
+    int countFilled;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
+
         player = new Human();
         opponent = new Human();
-        if (Util.randomBit()) {
-            activePlayer = player;
-        } else {
-            activePlayer = opponent;
-        }
-        winner = Field.EMPTY;
-        boardInit();
+        initGameState();
+        initBoard();
     }
 
-    private void boardInit() {
+    private void initBoard() {
         mBoardView = findViewById(R.id.board);
         mBoardView.setNumColumns(5);
         board = new Board(5, 5);
@@ -65,9 +69,13 @@ public class GameActivity extends AppCompatActivity {
 
                 winner = board.findWinner(lastMove);
                 if (winner == Field.EMPTY) {
-                    nextPlayer();
+                    if (board.isFull()) {
+                        showDialogDraw();
+                    } else {
+                        nextPlayer();
+                    }
                 } else {
-                    congratulate();
+                    showDialogWin(winner);
                 }
             }
 
@@ -79,5 +87,90 @@ public class GameActivity extends AppCompatActivity {
                 activePlayer = activePlayer == player ? opponent : player;
             }
         });
+    }
+
+    private void restartGame() {
+        board.reset();
+        mGridViewAdapter.notifyDataSetChanged();
+        initGameState();
+    }
+
+    private void initGameState() {
+        if (Util.randomBit()) {
+            activePlayer = player;
+        } else {
+            activePlayer = opponent;
+        }
+        winner = Field.EMPTY;
+    }
+
+    private void showDialogWin(Field winner) {
+        final Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_game_winner);
+        Window window = dialog.getWindow();
+        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+        window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        WindowManager.LayoutParams windowAttributes = window.getAttributes();
+        windowAttributes.gravity = Gravity.CENTER;
+        window.setAttributes(windowAttributes);
+        dialog.setCancelable(false);
+
+        TextView btn_again, btn_exit, txt_winner;
+        txt_winner = dialog.findViewById(R.id.txt_winner);
+        btn_again = dialog.findViewById(R.id.again);
+        btn_exit = dialog.findViewById(R.id.exit);
+
+        if (winner == Field.OPPONENT) {
+            txt_winner.setText("X win!!!");
+        } else if (winner == Field.PLAYER) {
+            txt_winner.setText("Y win!!!");
+        }
+        btn_again.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                restartGame();
+                dialog.dismiss();
+            }
+        });
+        btn_exit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+        dialog.show();
+    }
+
+    private void showDialogDraw() {
+        final Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_game_draw);
+        Window window = dialog.getWindow();
+        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+        window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        WindowManager.LayoutParams windowAttributes = window.getAttributes();
+        windowAttributes.gravity = Gravity.CENTER;
+        window.setAttributes(windowAttributes);
+        dialog.setCancelable(false);
+
+        TextView btn_again, btn_exit;
+        btn_again = dialog.findViewById(R.id.again);
+        btn_exit = dialog.findViewById(R.id.exit);
+
+        btn_again.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                restartGame();
+                dialog.dismiss();
+            }
+        });
+        btn_exit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+        dialog.show();
     }
 }

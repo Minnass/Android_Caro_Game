@@ -31,14 +31,17 @@
         android:theme="@style/Theme.Caro"
         tools:targetApi="31">
         <activity
+            android:name=".Activity.GameActivity"
+            android:exported="false" />
+        <activity
             android:name=".Activity.GameBluetoothActivity"
             android:exported="false" />
         <activity
             android:name=".Activity.ListRoomActivity"
             android:exported="false" />
-<!--        <activity-->
-<!--            android:name=".Activity.GameActivity"-->
-<!--            android:exported="false" />-->
+        <!--        <activity-->
+        <!--            android:name=".Activity.GameActivity"-->
+        <!--            android:exported="false" />-->
         <activity
             android:name=".Activity.EditInformationActivity"
             android:exported="false" />
