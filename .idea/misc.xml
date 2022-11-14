@@ -18,14 +18,18 @@
         <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/a.xml" value="0.14666666666666667" />
         <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/activity_edit_information.xml" value="0.184375" />
         <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/activity_game.xml" value="0.184375" />
+        <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/activity_game_activi2.xml" value="0.184375" />
+        <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/activity_game_bluetooth.xml" value="0.14666666666666667" />
         <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/activity_list_room.xml" value="0.184375" />
         <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/activity_menu_game.xml" value="0.22" />
+        <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/cell.xml" value="0.184375" />
         <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/custom_dialog.xml" value="0.184375" />
         <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/device_adapter_view.xml" value="0.184375" />
         <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/diaglog_loading.xml" value="0.184375" />
         <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/item_gameboard.xml" value="0.184375" />
         <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/loser_dialog.xml" value="0.1" />
         <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/room_item.xml" value="0.184375" />
+        <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/wating_play_again.xml" value="0.14666666666666667" />
         <entry key="..\:/Android_Caro_Game/app/src/main/res/layout/winner_diaglog.xml" value="0.184375" />
         <entry key="..\:/Android_Caro_Game/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.1" />
         <entry key="..\:/Caro/app/src/main/res/layout/activity_edit_information.xml" value="0.184375" />

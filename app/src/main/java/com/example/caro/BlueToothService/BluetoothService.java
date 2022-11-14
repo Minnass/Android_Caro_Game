@@ -3,13 +3,19 @@
 package com.example.caro.BlueToothService;
 
 
-import static com.example.caro.Activity.GameActivity.MESSAGE_CHAT;
-import static com.example.caro.Activity.GameActivity.MESSAGE_IMAGE;
-import static com.example.caro.Activity.GameActivity.mGameHandler;
-import static com.example.caro.Activity.GameActivity.success;
+import static com.example.caro.Activity.GameBluetoothActivity.MESSAGE_ACCEPT;
+import static com.example.caro.Activity.GameBluetoothActivity.MESSAGE_AGAIN;
+import static com.example.caro.Activity.GameBluetoothActivity.MESSAGE_IMAGE_AVATAR;
+import static com.example.caro.Activity.GameBluetoothActivity.MESSAGE_IMAGE_CHAT;
+import static com.example.caro.Activity.GameBluetoothActivity.MESSAGE_POSTION;
+import static com.example.caro.Activity.GameBluetoothActivity.MESSAGE_STRING_CHAT;
+import static com.example.caro.Activity.GameBluetoothActivity.MESSAGE_STRING_NAME;
+import static com.example.caro.Activity.GameBluetoothActivity.MESSAGE_YOU_LOSE;
+import static com.example.caro.Activity.GameBluetoothActivity.mGameHandler;
+import static com.example.caro.Activity.GameBluetoothActivity.success;
 import static com.example.caro.Activity.ListRoomActivity.mHandler;
-import static com.example.caro.Activity.GameActivity.MESSAGE_BLUETOOTH;
-import static com.example.caro.Activity.GameActivity.MESSAGE_GAME;
+import static com.example.caro.Activity.GameBluetoothActivity.MESSAGE_BLUETOOTH;
+
 import static com.example.caro.Activity.MenuGameActivity.mBluetoothService;
 
 import android.annotation.SuppressLint;
@@ -23,6 +29,7 @@ import android.provider.BaseColumns;
 import android.util.Log;
 
 import com.example.caro.Activity.ListRoomActivity;
+import com.example.caro.Caro.Player;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -34,13 +41,18 @@ import java.util.Arrays;
 import java.util.UUID;
 
 public class BluetoothService {
-
-    public static final String SEND_STRING = "STRING";
-    public static final String SEND_INT = "INT";
-    public static final String SEND_IMAGE = "IMAGE";
+    public static final String SEND_FEEDBACK = "@@@@@1";
+    public static final String SEND_INT_POSTION = "@@@@@2";
+    public static final String SEND_STRING_CHAT = "@@@@@3";
+    public static final String SEND_STRING_NAME = "@@@@@4";
+    public static final String SEND_IMAGE_CHAT = "@@@@@5";
+    public static final String SEND_IMAGE_AVATAR = "@@@@@6";
+    public static  final String SEND_PLAY_AGAIN="@@@@@7";
+    public static  final String SEND_ACCEPT="@@@@@8";
+    public static final String SEND_EXIT="@@@@10";
+    public static final String YOU_LOSE="@@@@11";
 
     private static final String TAG = "MainActivity";
-
     private static final String appName = "MYAPP";
 
     private static final UUID MY_UUID_INSECURE =
@@ -188,20 +200,20 @@ public class BluetoothService {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
-        boolean isSuccesful = true;
+
+        // Khi gửi đi 1 message thì đợi cho đến khi có thông điệp gửi lại để tiếp tục gửi lần tiếp theo
+        private boolean isSent = true;
 
         synchronized boolean get() {
-            return isSuccesful;
+            return isSent;
         }
 
         synchronized void set(boolean l) {
-            isSuccesful = l;
+            isSent = l;
         }
 
         public ConnectedThread(BluetoothSocket socket) {
-
             Log.d(TAG, "ConnectedThread: Starting.");
-
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
@@ -215,33 +227,59 @@ public class BluetoothService {
             mmOutStream = tmpOut;
         }
 
+
         public void run() {
             byte[] buffer = null;
             int numberOfBytes = 0;
             int index = 0;
             boolean flag = true;
-
+            String TypeOfMessage = "";
             while (true) {
                 if (flag) {
                     try {
                         byte[] temp = new byte[512];
-                        int k = mmInStream.read(temp);
-                        if (k > 0) {
-                            if (new String(temp, 0, k).equals("ok")) {
-                            //    Log.d(TAG, "Nhan phan hoi thanh cong");
+                        int bytes = mmInStream.read(temp);
+                        if (bytes > 0) {
+                            TypeOfMessage = new String(temp, 0, bytes).substring(0, 6);
+                            String Content = new String(temp, 0, bytes).substring(6);
+                          //  Log.d("MainContent", Content.toString());
+                            Log.d("Main", TypeOfMessage);
+                            if (TypeOfMessage.equals(SEND_FEEDBACK)) {
+                                Log.d(TAG, "DA nhan Duoc feedback");
                                 set(true);
-                            } else {
-                                numberOfBytes = Integer.parseInt(new String(temp, 0, k));
-                                Log.d(TAG, "" + numberOfBytes);
-                                buffer = new byte[numberOfBytes];
-                                 flag=false;
-                          //      Log.d(TAG, "nhan ne");
-                                mConnectedThread.write("ok".getBytes(StandardCharsets.UTF_8));
+                                continue;
+                            } else if (TypeOfMessage.equals(SEND_INT_POSTION)) {
+                                Log.d(TAG, "Postion receive: " + Integer.valueOf(Content));
+                                mGameHandler.obtainMessage(MESSAGE_POSTION, Integer.valueOf(Content)).sendToTarget();
+                            } else if (TypeOfMessage.equals(SEND_STRING_CHAT)) {
+                                mGameHandler.obtainMessage(MESSAGE_STRING_CHAT, Content).sendToTarget();
+                            } else if (TypeOfMessage.equals(SEND_STRING_NAME)) {
+                                mGameHandler.obtainMessage(MESSAGE_STRING_NAME, Content).sendToTarget();
                             }
+                            else if (TypeOfMessage.equals(YOU_LOSE))
+                            {
+                                mGameHandler.obtainMessage(MESSAGE_YOU_LOSE).sendToTarget();
+                            }
+                            else if(TypeOfMessage.equals(SEND_PLAY_AGAIN))
+                            {
+                                mGameHandler.obtainMessage(MESSAGE_AGAIN).sendToTarget();
+                            }
+                            else if(TypeOfMessage.equals(SEND_ACCEPT))
+                            {
+                                mGameHandler.obtainMessage(MESSAGE_ACCEPT).sendToTarget();
+                            }
+                            else {
+                                numberOfBytes = Integer.parseInt(Content);
+                                Log.d(TAG,  "a:"+numberOfBytes);
+                                buffer = new byte[numberOfBytes];
+                                flag = false;
+                                //      Log.d(TAG, "nhan ne");
+                            }
+                            mBluetoothService.sendString(SEND_FEEDBACK, SEND_FEEDBACK);
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
-                        Log.d(TAG,"loi");
+                    //    Log.d(TAG, "loi");
                     }
                 } else {
                     try {
@@ -249,86 +287,23 @@ public class BluetoothService {
                         int numbers = mmInStream.read(data);
                         System.arraycopy(data, 0, buffer, index, numbers);
                         index = index + numbers;
-                        Log.d(TAG,index+"");
+                        Log.d(TAG, index + "");
                         if (index == numberOfBytes) {
-                            mGameHandler.obtainMessage(MESSAGE_IMAGE, numberOfBytes, -1, buffer).sendToTarget();
+                            if (TypeOfMessage.equals(SEND_IMAGE_AVATAR)) {
+                                mGameHandler.obtainMessage(MESSAGE_IMAGE_AVATAR, numberOfBytes, -1, buffer).sendToTarget();
+                            } else {
+                                mGameHandler.obtainMessage(MESSAGE_IMAGE_CHAT, numberOfBytes, -1, buffer).sendToTarget();
+                            }
                             flag = true;
                         }
-                        mConnectedThread.write("ok".getBytes(StandardCharsets.UTF_8));
+                        mBluetoothService.sendString(SEND_FEEDBACK, SEND_FEEDBACK);
                     } catch (IOException e) {
                         e.printStackTrace();
-                        Log.d(TAG,"loi");
+                        Log.d(TAG, "loi");
                     }
                 }
             }
         }
-
-
-//        public void run() {
-//            byte[] buffer = new byte[1024];  // buffer store for the stream
-//            byte[] bufferImage = null;
-//            boolean flag = true;
-//            int bytes = 0; // bytes returned from read()
-//            String sendingType = "";
-//
-//            while (true) {
-//                try {
-                    //mmOutStream.write(buffer);
-//                    bytes = mmInStream.read(buffer);
-//                    Log.d(TAG, new String(buffer, 0, bytes));
-//                    if (flag) {
-//                        sendingType = new String(buffer, 0, bytes);
-//                        flag = false;
-//                    }
-//                    if (sendingType.equals(SEND_INT)) {
-//                        bytes = mmInStream.read(buffer);
-//                        mGameHandler.obtainMessage(MESSAGE_GAME, Integer.valueOf(new String(buffer, 0, bytes))).sendToTarget();
-//                        flag = true;
-//                    } else if (sendingType.equals(SEND_STRING)) {
-//                        bytes = mmInStream.read(buffer);
-//                        mGameHandler.obtainMessage(MESSAGE_CHAT, new String(buffer, 0, bytes)).sendToTarget();
-//                        flag = true;
-//                    } else {
-//                        byte[] temp = new byte[1024];
-//                        int k = mmInStream.read(temp);
-//                        int numberofBytes = Integer.parseInt(new String(temp, 0, k));
-//                        Log.d(TAG, "" + numberofBytes);
-//                        int index = 0;
-//                        bufferImage = new byte[numberofBytes];
-//                        while (true) {
-//                            try {
-//                                byte[] data = new byte[8192];
-//                                int number = mmInStream.read(data);
-//                                Log.d(TAG,number+"");
-//                                System.arraycopy(data, 0, bufferImage, index, number);
-//                                index += number;
-//                            } catch (Exception e) {
-//
-//                                if (index == numberofBytes) {
-//                                    Log.d(TAG, index + "loi");
-//                                    mGameHandler.obtainMessage(MESSAGE_IMAGE, numberofBytes, -1, bufferImage);
-//                                    break;
-//                                }
-//                            }
-//                        }
-//                        flag = true;
-//                    }
-
-
-                    //
-                    //String incomingMessage =
-                    //  mGameHandler.obtainMessage(MESSAGE_GAME,Integer.valueOf(incomingMessage)).sendToTarget();
-                    //MainActivity.handler.obtainMessage(3,incomingMessage).sendToTarget();
-                    //Log.d(TAG, "InputStream: " + incomingMessage);
-//                } catch (IOException e) {
-//                    Log.e(TAG, "write: Error reading Input Stream. " + e.getMessage());
-//                    break;
-//                }
-//
-//            }
-
-
-
 
         //Call this from the main activity to send data to the remote device
         public void write(byte[] bytes) {
@@ -352,77 +327,66 @@ public class BluetoothService {
         // Start the thread to manage the connection and perform transmissions
         mConnectedThread = new ConnectedThread(mmSocket);
         mConnectedThread.start();
-
     }
 
     public void write(byte[] out) {
         mConnectedThread.write(out);
     }
 
-    public void sendImage(Bitmap bitmap) {
-
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.WEBP, 10, stream);
-        byte[] imageBytes = stream.toByteArray();
-        Log.d(TAG, imageBytes.length + "");
-        int subArraySize = 800;
-       while (!mConnectedThread.get()) ;
-        mConnectedThread.write(String.valueOf(imageBytes.length).getBytes(StandardCharsets.UTF_8));
+    public void sendImage(byte[] buffer, String type) {
+        int lengthBuffer = buffer.length;
+        int length1 = type.length();
+        int length2 = String.valueOf(lengthBuffer).getBytes(StandardCharsets.UTF_8).length;
+        byte[] temp = new byte[length1 + length2];
+        if (type == SEND_IMAGE_CHAT) {
+            System.arraycopy(SEND_IMAGE_CHAT.getBytes(StandardCharsets.UTF_8), 0, temp, 0, length1);
+        } else {
+            System.arraycopy(SEND_IMAGE_AVATAR.getBytes(StandardCharsets.UTF_8), 0, temp, 0, length1);
+        }
+        System.arraycopy(String.valueOf(lengthBuffer).getBytes(StandardCharsets.UTF_8), 0, temp, length1, length2);
+        while (!mConnectedThread.get()) ;
+        mConnectedThread.write(temp);
         mConnectedThread.set(false);
-        for(int i=0;i<imageBytes.length;i+=subArraySize){
-            while(!mConnectedThread.get());
-            Log.d(TAG,i+"");
+        int subArraySize = 800;
+        for (int i = 0; i < buffer.length; i += subArraySize) {
+            while (!mConnectedThread.get()) ;
+            Log.d(TAG, i + "");
             byte[] tempArray;
-            tempArray=Arrays.copyOfRange(imageBytes,i,Math.min(imageBytes.length,i+subArraySize));
+            tempArray = Arrays.copyOfRange(buffer, i, Math.min(buffer.length, i + subArraySize));
             mConnectedThread.write(tempArray);
-            mConnectedThread.set(false);
         }
     }
 
-//    public void sendImage(Bitmap bitmap) {
-//        //send kieu image
-//        mConnectedThread.write(SEND_IMAGE.getBytes(StandardCharsets.UTF_8));
-//        try {
-//            Thread.sleep(100);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-//        bitmap.compress(Bitmap.CompressFormat.PNG, 40, stream);
-//        byte[] imageBytes = stream.toByteArray();
-//        int subArraySize = 8192;
-//        mConnectedThread.write(String.valueOf(imageBytes.length).getBytes(StandardCharsets.UTF_8));
-//        try {
-//            Thread.sleep(100);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//        for (int i = 0; i < imageBytes.length; i += subArraySize) {
-//            byte[] tempArray;
-//            tempArray = Arrays.copyOfRange(imageBytes, i, Math.min(imageBytes.length, i + subArraySize));
-//            mConnectedThread.write(tempArray);
-//        }
-//    }
+    public void sendString(String string, String type) {
+        byte[] buffer;
+        int length1 = SEND_STRING_CHAT.getBytes(StandardCharsets.UTF_8).length;
+        int length2 = string.getBytes(StandardCharsets.UTF_8).length;
+        buffer = new byte[length1 + length2];
+        if (type == SEND_STRING_CHAT) {
+            System.arraycopy(SEND_STRING_CHAT.getBytes(StandardCharsets.UTF_8), 0, buffer, 0, length1);
+        } else if (type == SEND_FEEDBACK) {
+            System.arraycopy(SEND_FEEDBACK.getBytes(StandardCharsets.UTF_8), 0, buffer, 0, length1);
 
-    public void sendString(String string) {
-        mConnectedThread.write(SEND_STRING.getBytes(StandardCharsets.UTF_8));
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        } else {
+            System.arraycopy(SEND_STRING_NAME.getBytes(StandardCharsets.UTF_8), 0, buffer, 0, length1);
         }
-        Log.d(TAG, string.getBytes(StandardCharsets.UTF_8).length + "");
-        mBluetoothService.write(string.getBytes(StandardCharsets.UTF_8));
+        System.arraycopy(string.getBytes(StandardCharsets.UTF_8), 0, buffer, length1, length2);
+        while (!mConnectedThread.get()) ;
+        mConnectedThread.write(buffer);
+//
     }
 
     public void sendInt(int number) {
-        mConnectedThread.write(SEND_INT.getBytes(StandardCharsets.UTF_8));
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        mConnectedThread.write(String.valueOf(number).getBytes(StandardCharsets.UTF_8));
+        byte[] buffer;
+        int length1 = SEND_INT_POSTION.getBytes(StandardCharsets.UTF_8).length;
+        int length2 = String.valueOf(number).getBytes(StandardCharsets.UTF_8).length;
+        buffer = new byte[length1 + length2];
+        System.arraycopy(SEND_INT_POSTION.getBytes(StandardCharsets.UTF_8), 0, buffer, 0, length1);
+        System.arraycopy(String.valueOf(number).getBytes(StandardCharsets.UTF_8), 0, buffer, length1, length2);
+        Log.d(TAG, String.valueOf(mConnectedThread.get()));
+        while (!mConnectedThread.get()) ;
+        mConnectedThread.write(buffer);
+        mConnectedThread.set(false);
     }
 
     public void Disconnect() {

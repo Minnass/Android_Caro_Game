@@ -49,7 +49,7 @@ public class ListRoomActivity extends AppCompatActivity {
             public void handleMessage(@NonNull Message msg) {
                 switch (msg.what) {
                     case GAME_CREATING: {
-                        Intent intent = new Intent(ListRoomActivity.this, GameActivity.class);
+                        Intent intent = new Intent(ListRoomActivity.this, GameBluetoothActivity.class);
                         startActivity(intent);
                         finish();
                         break;
@@ -87,6 +87,12 @@ public class ListRoomActivity extends AppCompatActivity {
                     }
                 }, 3000);
                 loadingRoom();
+            }
+        });
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
             }
         });
         IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);

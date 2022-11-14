@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.DialogInterface;
@@ -20,11 +21,13 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -38,11 +41,13 @@ import com.example.caro.R;
 import com.example.caro.Util.HideSoftKeyBoard;
 import com.example.caro.Util.MySharedPerferences;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import static com.example.caro.Activity.MenuGameActivity.user;
 
@@ -72,13 +77,31 @@ public class EditInformationActivity extends AppCompatActivity {
                 avatar.setImageBitmap(bitmap);
             }
         });
-        exit.setOnClickListener(v -> finish());
-        save.setOnClickListener(v -> {
-            if (name.getText().toString().equals("")) {
-                Toast.makeText(EditInformationActivity.this, "Nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
-            } else {
-                saveInformation();
-                Toast.makeText(EditInformationActivity.this, "Đã lưu thành công", Toast.LENGTH_SHORT).show();
+        cameraLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+            @Override
+            public void onActivityResult(ActivityResult result) {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Bundle bundle = result.getData().getExtras();
+                    Bitmap bitmap = (Bitmap) bundle.get("data");
+                    avatar.setImageBitmap(bitmap);
+                }
+            }
+        });
+        exit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+        save.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (name.getText().toString().equals("")) {
+                    Toast.makeText(EditInformationActivity.this, "Nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
+                } else {
+                    saveInformation();
+                    Toast.makeText(EditInformationActivity.this, "Đã lưu thành công", Toast.LENGTH_SHORT).show();
+                }
             }
         });
         camera.setOnClickListener(new View.OnClickListener() {
@@ -115,6 +138,8 @@ public class EditInformationActivity extends AppCompatActivity {
         HideSoftKeyBoard hideSoftKeyBoard = new HideSoftKeyBoard(EditInformationActivity.this);
         hideSoftKeyBoard.setupUI(viewGroup);
     }
+
+
 
     void mappingID() {
         viewGroup = findViewById(R.id.viewGroup);
@@ -259,7 +284,7 @@ public class EditInformationActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         //update user fromGameActivity
-       user.setPathImage(directory.getAbsolutePath());
+        user.setPathImage(directory.getAbsolutePath());
         user.setName(name.getText().toString());
         if (sex.getCheckedRadioButtonId() == male.getId()) {
             user.setSex("Nam");
