@@ -19,14 +19,12 @@ import com.example.caro.R;
 
 public class GameActivity extends AppCompatActivity {
 
-        private Board board;
-        private Player player;
-        private Player opponent;
-        private Player activePlayer;
-        private Field winner;
-        private Position lastMove;
-        GridView mBoardView;
-        GridViewAdapter mGridViewAdapter;
+    private Board board;
+    private Player player, opponent, activePlayer;
+    private Field winner;
+    private Position lastMove;
+    GridView mBoardView;
+    GridViewAdapter mGridViewAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +62,7 @@ public class GameActivity extends AppCompatActivity {
                     board.fillPostion(lastMove, Field.OPPONENT);
                     mGridViewAdapter.notifyDataSetChanged();
                 }
+
                 winner = board.findWinner(lastMove);
                 if (winner == Field.EMPTY) {
                     nextPlayer();

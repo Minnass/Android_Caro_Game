@@ -44,7 +44,7 @@
         android:layout_height="wrap_content"
         android:layout_centerInParent="true">
         <GridView
-            android:id="@+id/board_"
+            android:id="@+id/board_bluetooth_mode"
             android:layout_gravity="center"
             android:scrollbars="none"
             android:layout_width="wrap_content"

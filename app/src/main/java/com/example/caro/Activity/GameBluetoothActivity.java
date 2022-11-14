@@ -1,24 +1,19 @@
 package com.example.caro.Activity;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -60,7 +55,7 @@ public class GameBluetoothActivity extends AppCompatActivity {
     public static final int MESSAGE_AGAIN = 9;
     public static final int MESSAGE_ACCEPT=10;
     public static final int success = 1;
-    public static final int fail = 0;
+//    public static final int fail = 0;
 
     public static Handler mGameHandler;
     private Board board;
@@ -255,7 +250,8 @@ public class GameBluetoothActivity extends AppCompatActivity {
     }
 
     private void boardInit() {
-        mBoadGame = findViewById(R.id.board_);
+        mBoadGame = findViewById(R.id.board_bluetooth_mode);
+        // TODO: player should choose board dimension
         mBoadGame.setNumColumns(20);
         board = new Board(20, 20);
         mGridViewAdapter = new GridViewAdapter(this, board);

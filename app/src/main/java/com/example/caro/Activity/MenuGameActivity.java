@@ -7,7 +7,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -15,7 +17,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.caro.BlueToothService.BluetoothService;
@@ -27,12 +28,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MenuGameActivity extends AppCompatActivity {
-   TextView findRoom, createRoom,setting,exit,twoPlayer;
+    TextView btn_findRoom, btn_createRoom, btn_setting, btn_quit, btn_localPlay;
     private static final String TAG = "MenuGameActivity";
     public static BluetoothService mBluetoothService;
     private final int PERMISSION_SCAN = 1;
     private final int PERMISSION_ADVERTISE = 2;
     public static User user;
+
     @SuppressLint("HandlerLeak")
 
 
@@ -48,16 +50,15 @@ public class MenuGameActivity extends AppCompatActivity {
         requestPermissions(permission, 6);
     }
 
-    void initUser()
-    {
-        user=new User("","","");
-        if(MySharedPerferences.isSavedBefore(MenuGameActivity.this))
-        {
-            user.setSex(MySharedPerferences.getValue(MenuGameActivity.this,"sex"));
-            user.setName(MySharedPerferences.getValue(MenuGameActivity.this,"name"));
-            user.setPathImage(MySharedPerferences.getValue(MenuGameActivity.this,"imagePath"));
+    void initUser() {
+        user = new User("", "", "");
+        if (MySharedPerferences.isSavedBefore(MenuGameActivity.this)) {
+            user.setSex(MySharedPerferences.getValue(MenuGameActivity.this, "sex"));
+            user.setName(MySharedPerferences.getValue(MenuGameActivity.this, "name"));
+            user.setPathImage(MySharedPerferences.getValue(MenuGameActivity.this, "imagePath"));
         }
     }
+
     @SuppressLint("HandlerLeak")
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -69,7 +70,7 @@ public class MenuGameActivity extends AppCompatActivity {
         Mapping();
         initUser();
         mBluetoothService = new BluetoothService(this);
-        createRoom.setOnClickListener(new View.OnClickListener() {
+        btn_createRoom.setOnClickListener(new View.OnClickListener() {
             @SuppressLint("SupportAnnotationUsage")
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
@@ -77,7 +78,7 @@ public class MenuGameActivity extends AppCompatActivity {
                 btnEnableDisable_Discoverable();
             }
         });
-        findRoom.setOnClickListener(new View.OnClickListener() {
+        btn_findRoom.setOnClickListener(new View.OnClickListener() {
             @SuppressLint("SupportAnnotationUsage")
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
@@ -85,32 +86,46 @@ public class MenuGameActivity extends AppCompatActivity {
                 btn_Discover();
             }
         });
-        setting.setOnClickListener(new View.OnClickListener() {
+        btn_setting.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent=new Intent(MenuGameActivity.this,EditInformationActivity.class);
+                Intent intent = new Intent(MenuGameActivity.this, EditInformationActivity.class);
                 startActivity(intent);
             }
         });
-        exit.setOnClickListener(new View.OnClickListener() {
+        btn_quit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 finish();
             }
         });
-        twoPlayer.setOnClickListener(new View.OnClickListener() {
+        btn_localPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Intent Game 2 nguoi choi
+                //TODO Intent Game 2 nguoi choi
+                String[] option = {
+                        "With Bot",
+                        "With Human"
+                };
+                AlertDialog.Builder builder = new AlertDialog.Builder(MenuGameActivity.this);
+                builder.setTitle("Which mode?")
+                        .setItems(option, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        })
+                        .show();
             }
         });
     }
+
     void Mapping() {
-        findRoom = findViewById(R.id.btn_match);
-        createRoom = findViewById(R.id.btn_createRoom);
-        setting=findViewById(R.id.btn_modify);
-        exit=findViewById(R.id.btn_quit);
-        twoPlayer=findViewById(R.id.btn_play);
+        btn_createRoom = findViewById(R.id.btn_createRoom);
+        btn_findRoom = findViewById(R.id.btn_findRoom);
+        btn_setting = findViewById(R.id.btn_setting);
+        btn_quit = findViewById(R.id.btn_quit);
+        btn_localPlay = findViewById(R.id.btn_localPlay);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -141,8 +156,9 @@ public class MenuGameActivity extends AppCompatActivity {
             mBluetoothService.start();
         }
     }
+
     @RequiresApi(api = Build.VERSION_CODES.M)
-    void btn_Discover () {
+    void btn_Discover() {
         Log.d(TAG, "btnDiscover: Looking for unpaired devices.");
         if (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED
                 || checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
@@ -170,11 +186,12 @@ public class MenuGameActivity extends AppCompatActivity {
             startActivity(intent);
         }
     }
+
     @RequiresApi(api = Build.VERSION_CODES.M)
     @SuppressLint("MissingPermission")
     @Override
-    public void onRequestPermissionsResult ( int requestCode, @NonNull String[] permissions,
-                                             @NonNull int[] grantResults){
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         switch (requestCode) {
             case PERMISSION_ADVERTISE: {
                 List<String> temp = new ArrayList<>();
