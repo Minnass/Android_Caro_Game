@@ -1,6 +1,7 @@
 package com.example.caro.Activity;
 
-import  static  com.example.caro.Activity.MenuGameActivity.mBluetoothService;
+import static com.example.caro.Activity.MenuGameActivity.mBluetoothService;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
@@ -8,6 +9,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -39,11 +41,12 @@ public class ListRoomActivity extends AppCompatActivity {
     List<BluetoothDevice> mListDevice;
     public static Handler mHandler;
     public static final int GAME_CREATING = 1;
-    public  static  final  int FALSE_CREATING=0;
+    public static final int FALSE_CREATING = 0;
 
     @Override
     @SuppressLint("HandlerLeak")
     protected void onCreate(Bundle savedInstanceState) {
+
         mHandler = new Handler() {
             @Override
             public void handleMessage(@NonNull Message msg) {
@@ -54,8 +57,7 @@ public class ListRoomActivity extends AppCompatActivity {
                         finish();
                         break;
                     }
-                    case FALSE_CREATING:
-                    {
+                    case FALSE_CREATING: {
                         Toast.makeText(ListRoomActivity.this, "Thất bại!", Toast.LENGTH_SHORT).show();
                         break;
                     }
@@ -67,26 +69,32 @@ public class ListRoomActivity extends AppCompatActivity {
         back = findViewById(R.id.back_listRoom);
         reloading = findViewById(R.id.reload);
         loading = findViewById(R.id.loading);
-        mListRoom=findViewById(R.id.listRoom);
+        mListRoom = findViewById(R.id.listRoom);
         mListDevice = new ArrayList<>();
-        mListRommAdapter=new ListRoomAdapter(mListDevice,this);
-        LinearLayoutManager linearLayoutManager=new LinearLayoutManager(this,RecyclerView.VERTICAL,false);
+        mListRommAdapter = new ListRoomAdapter(mListDevice, this);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, RecyclerView.VERTICAL, false);
         mListRoom.setLayoutManager(linearLayoutManager);
         mListRoom.setAdapter(mListRommAdapter);
         reloading.setOnClickListener(new View.OnClickListener() {
+            @SuppressLint("MissingPermission")
             @Override
             public void onClick(View v) {
-                loading.setVisibility(View.VISIBLE);
-                mListRoom.setVisibility(View.GONE);
-                Handler handler=new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        loading.setVisibility(View.GONE);
-                        mListRoom.setVisibility(View.VISIBLE);
-                    }
-                }, 3000);
-                loadingRoom();
+                if (mBluetoothService.mBluetoothAdapter.isEnabled()) {
+                    loading.setVisibility(View.VISIBLE);
+                    mListRoom.setVisibility(View.GONE);
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            loading.setVisibility(View.GONE);
+                            mListRoom.setVisibility(View.VISIBLE);
+                        }
+                    }, 3000);
+                    loadingRoom();
+                } else {
+                    Intent enableBT = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                    startActivity(enableBT);
+                }
             }
         });
         back.setOnClickListener(new View.OnClickListener() {
@@ -99,12 +107,12 @@ public class ListRoomActivity extends AppCompatActivity {
         registerReceiver(mBroadcastReceiver3, discoverDevicesIntent);
     }
 
+
     @SuppressLint("MissingPermission")
     void loadingRoom() {
         if (mBluetoothService.mBluetoothAdapter.isDiscovering()) {
             mBluetoothService.mBluetoothAdapter.cancelDiscovery();
             mListDevice.clear();
-            Log.d(TAG,mListDevice.size()+"so luong");
             mListRommAdapter.notifyDataSetChanged();
             Log.d(TAG, "btnDiscover: Canceling discovery.");
         }
@@ -123,12 +131,11 @@ public class ListRoomActivity extends AppCompatActivity {
             final String action = intent.getAction();
             if (action.equals(BluetoothDevice.ACTION_FOUND)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                String temp=device.getName();
-                if(temp!=null&&!mListDevice.contains(device))
-                {
+                String temp = device.getName();
+                if (temp != null && !mListDevice.contains(device)) {
                     mListDevice.add(device);
                     mListRommAdapter.notifyDataSetChanged();
-                    Log.d(TAG, "onReceive: " + device.getName() );
+                    Log.d(TAG, "onReceive: " + device.getName());
                 }
             }
         }

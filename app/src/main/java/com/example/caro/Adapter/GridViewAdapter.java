@@ -37,7 +37,6 @@ public class GridViewAdapter extends BaseAdapter {
 
     private class ViewHolder {
         ImageView image;
-
         public ViewHolder(View view) {
             image = view.findViewById(R.id.img_field);
         }
@@ -47,7 +46,7 @@ public class GridViewAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder viewHolder;
         if (convertView == null) {
-            LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.cell, null);
             viewHolder = new ViewHolder(convertView);
             convertView.setTag(viewHolder);

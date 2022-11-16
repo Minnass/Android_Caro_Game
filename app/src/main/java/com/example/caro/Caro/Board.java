@@ -127,7 +127,7 @@ public class Board {
                 }
             }
             // check winner
-            if (countFields == 5) {
+            if (countFields >= 5) {
                 return type;
             }
         }

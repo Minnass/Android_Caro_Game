@@ -8,9 +8,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
+import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,52 +26,60 @@ import com.example.caro.BlueToothService.BluetoothService;
 import com.example.caro.Model.User;
 import com.example.caro.R;
 import com.example.caro.Util.MySharedPerferences;
+import com.example.caro.Util.PermissionAlertDialog;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MenuGameActivity extends AppCompatActivity {
-   TextView findRoom, createRoom,setting,exit,twoPlayer;
+
+
+    TextView findRoom, createRoom, setting, exit, twoPlayer;
     private static final String TAG = "MenuGameActivity";
     public static BluetoothService mBluetoothService;
     private final int PERMISSION_SCAN = 1;
     private final int PERMISSION_ADVERTISE = 2;
+    private final int PERMISSION_ACCESS_COARSE_LOCATION = 4;
+    private final int PERMISSION_ACCESS_FINE_LOCATION = 5;
     public static User user;
-    @SuppressLint("HandlerLeak")
+    public static ArrayList<Integer> mListStick = null;
+
+//    @SuppressLint("HandlerLeak")
+//    @RequiresApi(api = Build.VERSION_CODES.M)
+//    void initPermission() {
+//        @SuppressLint("InlinedApi")
+//        String[] permission = new String[]{
+//                Manifest.permission.BLUETOOTH_CONNECT,
+//                Manifest.permission.ACCESS_COARSE_LOCATION,
+//                Manifest.permission.ACCESS_FINE_LOCATION,
+//                Manifest.permission.BLUETOOTH_SCAN,
+//                Manifest.permission.BLUETOOTH_ADVERTISE
+//        };
+//        requestPermissions(permission, 6);
+//    }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    void initPermission() {
-        @SuppressLint("InlinedApi")
-        String[] permission = new String[]{Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.ACCESS_COARSE_LOCATION,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_ADVERTISE
-        };
-        requestPermissions(permission, 6);
-    }
-
-    void initUser()
-    {
-        user=new User("","","");
-        if(MySharedPerferences.isSavedBefore(MenuGameActivity.this))
-        {
-            user.setSex(MySharedPerferences.getValue(MenuGameActivity.this,"sex"));
-            user.setName(MySharedPerferences.getValue(MenuGameActivity.this,"name"));
-            user.setPathImage(MySharedPerferences.getValue(MenuGameActivity.this,"imagePath"));
-        }
-    }
     @SuppressLint("HandlerLeak")
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         //CheckhoiTao
-        initPermission();
+//        initPermission();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_menu_game);
         Mapping();
         initUser();
+        mListStick = initListSticker();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                saveStickerIntoInterStorage();
+            }
+        }).start();
         mBluetoothService = new BluetoothService(this);
         createRoom.setOnClickListener(new View.OnClickListener() {
             @SuppressLint("SupportAnnotationUsage")
@@ -88,7 +100,7 @@ public class MenuGameActivity extends AppCompatActivity {
         setting.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent=new Intent(MenuGameActivity.this,EditInformationActivity.class);
+                Intent intent = new Intent(MenuGameActivity.this, EditInformationActivity.class);
                 startActivity(intent);
             }
         });
@@ -102,28 +114,35 @@ public class MenuGameActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //Intent Game 2 nguoi choi
+                Intent intent = new Intent(MenuGameActivity.this, GameActivity.class);
+                startActivity(intent);
             }
         });
     }
+
     void Mapping() {
         findRoom = findViewById(R.id.btn_match);
         createRoom = findViewById(R.id.btn_createRoom);
-        setting=findViewById(R.id.btn_modify);
-        exit=findViewById(R.id.btn_quit);
-        twoPlayer=findViewById(R.id.btn_play);
+        setting = findViewById(R.id.btn_modify);
+        exit = findViewById(R.id.btn_quit);
+        twoPlayer = findViewById(R.id.btn_play);
     }
+
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     public void btnEnableDisable_Discoverable() {
-        Log.d(TAG, "btnEnableDisable_Discoverable: Making device discoverable for 300 seconds.");
-        if (checkSelfPermission(Manifest.permission.BLUETOOTH_ADVERTISE) != PackageManager.PERMISSION_GRANTED
-                || checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            @SuppressLint("InlinedApi")
-            String[] permission = new String[]{Manifest.permission.BLUETOOTH_CONNECT,
-                    Manifest.permission.BLUETOOTH_ADVERTISE
-            };
-            requestPermissions(permission, PERMISSION_ADVERTISE);
+
+        if (checkSelfPermission(Manifest.permission.BLUETOOTH_ADVERTISE) != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                requestPermissions(new String[]{Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_ADVERTISE}, PERMISSION_ADVERTISE);
+            }
         } else {
+
+            Bundle bundle = new Bundle();
+            bundle.putBoolean("connected", true);
+            Intent intent1 = new Intent(MenuGameActivity.this, GameBluetoothActivity.class);
+            intent1.putExtras(bundle);
+            startActivity(intent1);
             new Thread(new Runnable() {
                 @SuppressLint("MissingPermission")
                 @Override
@@ -133,123 +152,188 @@ public class MenuGameActivity extends AppCompatActivity {
                     startActivity(discoverableIntent);
                 }
             }).start();
-            Bundle bundle = new Bundle();
-            bundle.putBoolean("connected", true);
-            Intent intent1 = new Intent(MenuGameActivity.this, GameBluetoothActivity.class);
-            intent1.putExtras(bundle);
-            startActivity(intent1);
-            mBluetoothService.start();
         }
     }
+
     @RequiresApi(api = Build.VERSION_CODES.M)
-    void btn_Discover () {
+    void btn_Discover() {
         Log.d(TAG, "btnDiscover: Looking for unpaired devices.");
-        if (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED
-                || checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                || checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                || checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            @SuppressLint("InlinedApi")
-            String[] permission = new String[]{Manifest.permission.BLUETOOTH_CONNECT,
-                    Manifest.permission.ACCESS_COARSE_LOCATION,
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.BLUETOOTH_SCAN,
-            };
-            requestPermissions(permission, PERMISSION_SCAN);
-        } else {
-            if (!mBluetoothService.mBluetoothAdapter.isEnabled()) {
-                new Thread(new Runnable() {
-                    @SuppressLint("MissingPermission")
-                    @Override
-                    public void run() {
-                        Intent enableBT = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                        startActivity(enableBT);
-                    }
-                }).start();
+        if (checkSelfPermission(
+                Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED
+                || checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT}, PERMISSION_SCAN);
             }
+
+        } else {
             Intent intent = new Intent(MenuGameActivity.this, ListRoomActivity.class);
             startActivity(intent);
         }
     }
+
     @RequiresApi(api = Build.VERSION_CODES.M)
     @SuppressLint("MissingPermission")
     @Override
-    public void onRequestPermissionsResult ( int requestCode, @NonNull String[] permissions,
-                                             @NonNull int[] grantResults){
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         switch (requestCode) {
             case PERMISSION_ADVERTISE: {
-                List<String> temp = new ArrayList<>();
-                int count = 0;
-                for (int i = 0; i < grantResults.length; i++) {
-                    if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
-                        temp.add(permissions[i]);
-                        count++;
+                if ( grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    if (shouldShowRequestPermissionRationale(Manifest.permission.BLUETOOTH_ADVERTISE)) {
+                        PermissionAlertDialog.requestPermissionAgain(MenuGameActivity.this, new String[]{Manifest.permission.BLUETOOTH_ADVERTISE,Manifest.permission.BLUETOOTH_CONNECT}, PERMISSION_ADVERTISE);
+                    } else {
+                        PermissionAlertDialog.showAlerDialogWarning(MenuGameActivity.this);
                     }
-                }
-                if (count > 0) {
-                    String[] strArr = new String[temp.size()];
-                    temp.toArray(strArr);
-                    AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-                    alertDialog.setTitle("Cảnh báo!");
-                    alertDialog.setIcon(R.drawable.warning);
-                    alertDialog.setMessage("Để chơi được game bạn cần phải cấp quyền!");
-                    alertDialog.setPositiveButton("Đồng ý", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            requestPermissions(strArr, PERMISSION_SCAN);
-                        }
-                    });
-                    alertDialog.setNegativeButton("Từ chối", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                        }
-                    });
-                    alertDialog.show();
                 } else {
-                    Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-                    discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
-                    startActivity(discoverableIntent);
-                    mBluetoothService.start();
+                    Bundle bundle = new Bundle();
+                    bundle.putBoolean("connected", true);
+                    Intent intent1 = new Intent(MenuGameActivity.this, GameBluetoothActivity.class);
+                    intent1.putExtras(bundle);
+                    startActivity(intent1);
+                    new Thread(new Runnable() {
+                        @SuppressLint("MissingPermission")
+                        @Override
+                        public void run() {
+                            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+                            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+                            startActivity(discoverableIntent);
+                        }
+                    }).start();
                 }
+                break;
             }
             case PERMISSION_SCAN: {
-                List<String> temp = new ArrayList<>();
-                int count = 0;
-                for (int i = 0; i < grantResults.length; i++) {
-                    if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
-                        temp.add(permissions[i]);
-                        count++;
+                if(grantResults.length==4)
+                {
+                    if(grantResults[0]!=PackageManager.PERMISSION_GRANTED&&grantResults[2]!=PackageManager.PERMISSION_GRANTED)
+                    {
+                        if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                            PermissionAlertDialog.requestPermissionAgain(MenuGameActivity.this,new  String[]{Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT}, PERMISSION_SCAN);
+                        } else {
+                            PermissionAlertDialog.showAlerDialogWarning(MenuGameActivity.this);
+                        }
+                    }
+                    else if(grantResults[0]!=PackageManager.PERMISSION_GRANTED)
+                    {
+                        if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                            PermissionAlertDialog.requestPermissionAgain(MenuGameActivity.this,new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_SCAN);
+                        } else {
+                            PermissionAlertDialog.showAlerDialogWarning(MenuGameActivity.this);
+                        }
+                    }
+                    else if(grantResults[2]!=PackageManager.PERMISSION_GRANTED)
+                    {
+                        if (shouldShowRequestPermissionRationale(Manifest.permission.BLUETOOTH_SCAN)) {
+                            PermissionAlertDialog.requestPermissionAgain(MenuGameActivity.this,new String[]{Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT}, PERMISSION_SCAN);
+                        } else {
+                            PermissionAlertDialog.showAlerDialogWarning(MenuGameActivity.this);
+                        }
+                    }
+                    else
+                    {
+                        Intent intent = new Intent(MenuGameActivity.this, ListRoomActivity.class);
+                        startActivity(intent);
                     }
                 }
-                if (count > 0) {
-                    String[] strArr = new String[temp.size()];
-                    temp.toArray(strArr);
-                    AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-                    alertDialog.setTitle("Cảnh báo!");
-                    alertDialog.setIcon(R.drawable.warning);
-                    alertDialog.setMessage("Để chơi được game bạn cần phải cấp quyền!");
-                    alertDialog.setPositiveButton("Đồng ý", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            requestPermissions(strArr, PERMISSION_SCAN);
+                else
+                {
+                    if ( grantResults[0] != PackageManager.PERMISSION_GRANTED&&permissions[0].equals(Manifest.permission.ACCESS_COARSE_LOCATION))
+                    {
+                        if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                            PermissionAlertDialog.requestPermissionAgain(MenuGameActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_SCAN);
+                        } else {
+                            PermissionAlertDialog.showAlerDialogWarning(MenuGameActivity.this);
                         }
-                    });
-                    alertDialog.setNegativeButton("Từ chối", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                        }
-                    });
-                    alertDialog.show();
-                } else {
-                    if (!mBluetoothService.mBluetoothAdapter.isEnabled()) {
-                        Intent enableBT = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                        startActivity(enableBT);
                     }
-                    Intent intent = new Intent(this, ListRoomActivity.class);
-                    startActivity(intent);
+                    else if(grantResults[0] != PackageManager.PERMISSION_GRANTED&&permissions[0].equals(Manifest.permission.BLUETOOTH_SCAN))
+                    {
+                        if (shouldShowRequestPermissionRationale(Manifest.permission.BLUETOOTH_SCAN)) {
+                            PermissionAlertDialog.requestPermissionAgain(MenuGameActivity.this, new String[]{Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT}, PERMISSION_SCAN);
+                        } else {
+                            PermissionAlertDialog.showAlerDialogWarning(MenuGameActivity.this);
+                        }
+                    }
+                    else
+                    {
+                        Intent intent = new Intent(MenuGameActivity.this, ListRoomActivity.class);
+                        startActivity(intent);
+                    }
                 }
+                break;
             }
+//            case PERMISSION_ACCESS_COARSE_LOCATION: {
+//                if (grantResults.length == 1 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+//                    if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+//                        PermissionAlertDialog.requestPermissionAgain(MenuGameActivity.this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_ACCESS_COARSE_LOCATION);
+//                    } else {
+//                        PermissionAlertDialog.showAlerDialogWarning(MenuGameActivity.this);
+//                    }
+//                }
+//                break;
+//            }
+//            case PERMISSION_ACCESS_FINE_LOCATION:
+//            {
+//                if(grantResults.length == 1 && grantResults[0] != PackageManager.PERMISSION_GRANTED)
+//                {
+//                    if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+//                        PermissionAlertDialog.requestPermissionAgain(MenuGameActivity.this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION},PERMISSION_ACCESS_FINE_LOCATION);
+//                    }
+//                    else
+//                    {
+//                        PermissionAlertDialog.showAlerDialogWarning(MenuGameActivity.this);
+//                    }
+//                }
+//                break;
+//            }
             default:
                 super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
+
+    //Prepare stickẻ by saving into Internal storage for send stick in play game
+    ArrayList<Integer> initListSticker() {
+        ArrayList<Integer> mListStick = new ArrayList<>();
+        mListStick.add(R.drawable.after_boom_sticker);
+        mListStick.add(R.drawable.beat_brick_sticker);
+        mListStick.add(R.drawable.boss_sticker);
+        mListStick.add(R.drawable.big_smile_sticker);
+        mListStick.add(R.drawable.hell_boy_sticker);
+        mListStick.add(R.drawable.dribble_sticker);
+        return mListStick;
+
+    }
+
+    public void saveStickerIntoInterStorage() {
+        ContextWrapper cw = new ContextWrapper(getApplicationContext());
+        File directory = cw.getDir("caroPlayPath", Context.MODE_PRIVATE);
+        FileOutputStream out = null;
+
+        for (int i = 0; i < mListStick.size(); i++) {
+            try {
+                File mypath = new File(directory, String.valueOf(mListStick.get(i)) + ".jpg");
+                out = new FileOutputStream(mypath);
+                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), mListStick.get(i));
+                bitmap.compress(Bitmap.CompressFormat.WEBP, 75, out);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            try {
+                assert out != null;
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        MySharedPerferences.setValue(MenuGameActivity.this, "imagePath", directory.getAbsolutePath());
+    }
+
+    void initUser() {
+        user = new User("", "", "");
+        if (MySharedPerferences.isSavedBefore(MenuGameActivity.this)) {
+            user.setSex(MySharedPerferences.getValue(MenuGameActivity.this, "sex"));
+            user.setName(MySharedPerferences.getValue(MenuGameActivity.this, "name"));
+            user.setPathImage(MySharedPerferences.getValue(MenuGameActivity.this, "imagePath"));
         }
     }
 }

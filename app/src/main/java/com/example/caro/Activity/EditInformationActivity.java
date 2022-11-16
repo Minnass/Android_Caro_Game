@@ -40,6 +40,7 @@ import android.widget.Toast;
 import com.example.caro.R;
 import com.example.caro.Util.HideSoftKeyBoard;
 import com.example.caro.Util.MySharedPerferences;
+import com.example.caro.Util.PermissionAlertDialog;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -138,9 +139,7 @@ public class EditInformationActivity extends AppCompatActivity {
         HideSoftKeyBoard hideSoftKeyBoard = new HideSoftKeyBoard(EditInformationActivity.this);
         hideSoftKeyBoard.setupUI(viewGroup);
     }
-
-
-
+        //anh xa view
     void mappingID() {
         viewGroup = findViewById(R.id.viewGroup);
         avatar = findViewById(R.id.avatar_edit);
@@ -156,7 +155,7 @@ public class EditInformationActivity extends AppCompatActivity {
         //default radio group is male
         sex.check(male.getId());
     }
-
+        //Xử lí yêu cầu truy cập quyền xử dụng camera
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -169,18 +168,17 @@ public class EditInformationActivity extends AppCompatActivity {
                     if (intent.resolveActivity(getPackageManager()) != null) {
                         cameraLauncher.launch(intent);
                     }
-
                 } else {
                     if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-                        requestPermissionAgain();
+                        PermissionAlertDialog.requestPermissionAgain(EditInformationActivity.this,new String[]{Manifest.permission.CAMERA},CAMERA_PEMISSION);
                     } else {
-                        showAlerDialogWarning();
+                        PermissionAlertDialog.showAlerDialogWarning(EditInformationActivity.this);
                     }
                 }
                 break;
         }
     }
-
+    //Kiểm tra permission
     @RequiresApi(api = Build.VERSION_CODES.M)
     void checkPermission() {
         if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -189,55 +187,14 @@ public class EditInformationActivity extends AppCompatActivity {
             requestPermissions(permission, CAMERA_PEMISSION);
         } else {
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            if (intent.resolveActivity(getPackageManager()) != null) {
+            if (intent.resolveActivity(getPackageManager()) != null)    {
                 cameraLauncher.launch(intent);
             }
         }
     }
 
-    public void requestPermissionAgain() {
-        new AlertDialog.Builder(this)
-                .setTitle("Cảnh báo")
-                .setMessage("Quyền này bắt buộc để tiếp tục chức năng")
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        ActivityCompat.requestPermissions(EditInformationActivity.this, new String[]{Manifest.permission.CAMERA}, CAMERA_PEMISSION);
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                }).create().show();
-    }
 
-    public void showAlerDialogWarning() {
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this)
-                .setTitle("Warning")
-                .setMessage(" \"Don't show again\" đã được đặt là mặc định, bạn phải đến AppSetting để cấp quyền.");
-        alertDialogBuilder.setPositiveButton("Đồng ý",
-                new DialogInterface.OnClickListener() {
-                    @RequiresApi(api = Build.VERSION_CODES.M)
-                    @Override
-                    public void onClick(DialogInterface arg0, int arg1) {
-                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                        Uri uri = Uri.fromParts("package", getPackageName(), null);
-                        intent.setData(uri);
-                        startActivity(intent);
-                    }
-                });
-        alertDialogBuilder.setNegativeButton("Hủy", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-
-            }
-        });
-        AlertDialog alertDialog = alertDialogBuilder.create();
-        alertDialog.show();
-    }
-
+    //Tạo giao diện người chơi phù hợp với thông tin đã lưu trước đó
     void initUI() {
         if (!MySharedPerferences.isSavedBefore(EditInformationActivity.this)) {
             return;
@@ -258,8 +215,8 @@ public class EditInformationActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-
-    void saveInformation() {
+    // Lưu thông tin người chơi xuống bộ nhớ trong
+    public void saveInformation() {
         //luu ten va gioi tinh
         //
         MySharedPerferences.deleteBefore(EditInformationActivity.this);
