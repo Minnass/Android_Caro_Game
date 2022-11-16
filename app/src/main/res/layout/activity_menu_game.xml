@@ -21,7 +21,7 @@
             android:background="@drawable/btn_create_room" />
 
         <TextView
-            android:id="@+id/btn_match"
+            android:id="@+id/btn_findRoom"
             android:layout_width="214dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
@@ -29,7 +29,7 @@
             android:background="@drawable/btn_find_room" />
 
         <TextView
-            android:id="@+id/btn_play"
+            android:id="@+id/btn_localPlay"
             android:layout_width="271dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
@@ -37,7 +37,7 @@
             android:background="@drawable/btn_play" />
 
         <TextView
-            android:id="@+id/btn_modify"
+            android:id="@+id/btn_setting"
             android:layout_width="340dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"

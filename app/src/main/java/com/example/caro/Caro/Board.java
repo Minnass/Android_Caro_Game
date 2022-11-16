@@ -4,6 +4,7 @@ public class Board {
     private int dimensionX;
     private int dimensionY;
     private Field fields[][];
+    private int countFilled;
 
 
     public Board(int dimensionX, int dimensionY) {
@@ -15,6 +16,12 @@ public class Board {
                 fields[i][j] = Field.EMPTY;
             }
         }
+        countFilled = 0;
+    }
+
+    public boolean isFull() {
+        if (countFilled == dimensionX*dimensionY) return true;
+        return false;
     }
 
     public void reset()
@@ -24,6 +31,7 @@ public class Board {
                 fields[i][j] = Field.EMPTY;
             }
         }
+        countFilled = 0;
     }
 
     public int getDimensionX() {
@@ -60,6 +68,7 @@ public class Board {
             return false;
         }
         fields[pos.x][pos.y] = field;
+        countFilled++;
         return true;
     }
 
@@ -80,7 +89,7 @@ public class Board {
      * @param type
      * @return
      */
-    int countFields(Field type) {
+    public int countFields(Field type) {
         int res = 0;
         for (int i = 0; i < dimensionX; i++) {
             for (int j = 0; j < dimensionY; j++) {

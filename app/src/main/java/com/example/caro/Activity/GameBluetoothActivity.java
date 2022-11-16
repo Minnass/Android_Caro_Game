@@ -1,25 +1,20 @@
 package com.example.caro.Activity;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Message;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -370,7 +365,8 @@ public class GameBluetoothActivity extends AppCompatActivity {
     }
 
     private void boardInit() {
-        mBoadGame = findViewById(R.id.board_);
+        mBoadGame = findViewById(R.id.board_bluetooth_mode);
+        // TODO: player should choose board dimension
         mBoadGame.setNumColumns(20);
         board = new Board(20, 20);
         mGridViewAdapter = new GridViewAdapter(this, board);
@@ -493,7 +489,7 @@ public class GameBluetoothActivity extends AppCompatActivity {
     void initWinnerDialog() {
         winnerDiaglog = new Dialog(GameBluetoothActivity.this);
         winnerDiaglog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        winnerDiaglog.setContentView(R.layout.winner_diaglog);
+        winnerDiaglog.setContentView(R.layout.dialog_game_winner);
         Window window = winnerDiaglog.getWindow();
         window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
         window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
@@ -587,7 +583,7 @@ public class GameBluetoothActivity extends AppCompatActivity {
     void initLoserDialog() {
         loserDiaglog = new Dialog(GameBluetoothActivity.this);
         loserDiaglog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        loserDiaglog.setContentView(R.layout.loser_dialog);
+        loserDiaglog.setContentView(R.layout.dialog_game_loser);
         Window window = loserDiaglog.getWindow();
         window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
         window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));

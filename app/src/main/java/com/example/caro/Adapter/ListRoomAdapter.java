@@ -57,7 +57,7 @@ public class ListRoomAdapter extends RecyclerView.Adapter<ListRoomAdapter.ListRo
             public void onClick(View v) {
                 final Dialog dialog = new Dialog(context);
                 dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                dialog.setContentView(R.layout.custom_dialog);
+                dialog.setContentView(R.layout.dialog_custom);
                 Window window = dialog.getWindow();
                 if (window == null) {
                     return;
