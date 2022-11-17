@@ -7,7 +7,7 @@
     android:orientation="vertical"
     tools:context=".Activity.GameActivity">
 
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/linear1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -29,13 +29,17 @@
             android:id="@+id/name_competitor"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
             android:layout_gravity="center"
             android:layout_marginLeft="20dp"
+            android:layout_toEndOf="@+id/avatar_competitor"
             android:text="Đối phương"
             android:textColor="@color/white"
             android:textSize="25dp"
             android:textStyle="bold" />
-    </LinearLayout>
+
+
+    </RelativeLayout>
     <FrameLayout
         android:id="@+id/frameGvGame"
         android:layout_width="match_parent"
@@ -83,42 +87,6 @@
             android:textSize="25dp"
             android:textStyle="bold" />
 
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
 
-            <LinearLayout
-                android:id="@+id/linear3"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_above="@id/linear2"
-                android:layout_below="@id/frameGvGame"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/sendText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Send" />
-
-                <EditText
-                    android:id="@+id/message"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Nhap text"
-                    android:textSize="20dp" />
-
-                <Button
-                    android:id="@+id/sendImage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-
-                <ImageView
-                    android:id="@+id/image_game"
-                    android:layout_width="60dp"
-                    android:layout_height="60dp"
-                    android:src="@drawable/user" />
-            </LinearLayout>
-        </HorizontalScrollView>
     </LinearLayout>
 </RelativeLayout>

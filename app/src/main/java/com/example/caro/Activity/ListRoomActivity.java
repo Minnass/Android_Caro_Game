@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -45,6 +46,7 @@ public class ListRoomActivity extends AppCompatActivity {
     @Override
     @SuppressLint("HandlerLeak")
     protected void onCreate(Bundle savedInstanceState) {
+
         mHandler = new Handler() {
             @Override
             public void handleMessage(@NonNull Message msg) {
@@ -74,19 +76,25 @@ public class ListRoomActivity extends AppCompatActivity {
         mListRoom.setLayoutManager(linearLayoutManager);
         mListRoom.setAdapter(mListRommAdapter);
         reloading.setOnClickListener(new View.OnClickListener() {
+            @SuppressLint("MissingPermission")
             @Override
             public void onClick(View v) {
-                loading.setVisibility(View.VISIBLE);
-                mListRoom.setVisibility(View.GONE);
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        loading.setVisibility(View.GONE);
-                        mListRoom.setVisibility(View.VISIBLE);
-                    }
-                }, 3000);
-                loadingRoom();
+                if (mBluetoothService.mBluetoothAdapter.isEnabled()) {
+                    loading.setVisibility(View.VISIBLE);
+                    mListRoom.setVisibility(View.GONE);
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            loading.setVisibility(View.GONE);
+                            mListRoom.setVisibility(View.VISIBLE);
+                        }
+                    }, 3000);
+                    loadingRoom();
+                } else {
+                    Intent enableBT = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                    startActivity(enableBT);
+                }
             }
         });
         back.setOnClickListener(new View.OnClickListener() {
@@ -99,12 +107,12 @@ public class ListRoomActivity extends AppCompatActivity {
         registerReceiver(mBroadcastReceiver3, discoverDevicesIntent);
     }
 
+
     @SuppressLint("MissingPermission")
     void loadingRoom() {
         if (mBluetoothService.mBluetoothAdapter.isDiscovering()) {
             mBluetoothService.mBluetoothAdapter.cancelDiscovery();
             mListDevice.clear();
-            Log.d(TAG, mListDevice.size() + "so luong");
             mListRommAdapter.notifyDataSetChanged();
             Log.d(TAG, "btnDiscover: Canceling discovery.");
         }

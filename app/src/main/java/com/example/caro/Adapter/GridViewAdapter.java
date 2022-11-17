@@ -37,7 +37,6 @@ public class GridViewAdapter extends BaseAdapter {
 
     private class ViewHolder {
         ImageView image;
-
         public ViewHolder(View view) {
             image = view.findViewById(R.id.img_field);
         }
