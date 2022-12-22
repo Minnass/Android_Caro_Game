@@ -12,6 +12,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -27,6 +28,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.caro.Adapter.ChattingAdapter;
 import com.example.caro.Adapter.GridViewAdapter;
 import com.example.caro.BlueToothService.BluetoothService;
 import com.example.caro.Caro.Board;
@@ -34,8 +36,11 @@ import com.example.caro.Caro.Field;
 import com.example.caro.Caro.Position;
 import com.example.caro.R;
 import com.example.caro.Util.ImageFromInternal;
+import com.example.caro.Util.MySharedPerferences;
+import com.example.caro.Util.ToastCustom;
 
 import static com.example.caro.Activity.MenuGameActivity.mBluetoothService;
+import static com.example.caro.Activity.MenuGameActivity.mListStick;
 import static com.example.caro.Activity.MenuGameActivity.user;
 
 import java.io.File;
@@ -44,6 +49,7 @@ import java.io.FileNotFoundException;
 
 public class GameBluetoothActivity extends AppCompatActivity {
 
+    //Danh sách các Flag lưu kiểu gửi messaga type cho handler
     public static final int MESSAGE_POSTION = 1;
     public static final int MESSAGE_IMAGE_AVATAR = 2;
     public static final int MESSAGE_IMAGE_CHAT = 3;
@@ -53,30 +59,90 @@ public class GameBluetoothActivity extends AppCompatActivity {
     public static final int MESSAGE_YOU_LOSE = 7;
     public static final int MESSAGE_EXIT = 8;
     public static final int MESSAGE_AGAIN = 9;
-    public static final int MESSAGE_ACCEPT=10;
+    public static final int MESSAGE_ACCEPT = 10;
     public static final int success = 1;
-//    public static final int fail = 0;
 
-    public static Handler mGameHandler;
-    private Board board;
-    private GridView mBoadGame;
-    private GridViewAdapter mGridViewAdapter;
-    private TextView competitorName, yourName;
-    private ImageView competitorImg, yourImg;
+    public static Handler mGameHandler;         //Handler xử lí các message gửi đến UI thread
+    private Board board;                        //Lưu dữ liệu sau mỗi lần đánh của bạn và đói phương
+    private GridView mBoadGame;                 //Gridview tạo ván cờ
+    private GridViewAdapter mGridViewAdapter;   //Adaoter của gridview
+    private TextView competitorName, yourName;  //Tên của đối phương và bạn
+    private ImageView competitorImg, yourImg;   //Avatar của  đối phương và bạn
 
-    private boolean yourTurn = false;
-    private boolean startGame = false;
-    private Position lastMove;
-    Button sendbtn, sendImage;
-    EditText message;
-    ImageView imageView;
+    private boolean yourTurn = false;// cờ kiểm soát lượt đánh
+    private boolean startGame = false; // cờ kiểm soát game có thể bắt đầu hay chưa
+    private boolean isWinner = false; // cờ nếu đã có người chơi chiến thắng
+    private Position lastMove;          //Vị trí mà bạn chọn trong ván cờ
+
+
+    Dialog winnerDiaglog = null; // Dialog nếu bạn thắng
+    Dialog loserDiaglog = null; // Dialog nếu bạn thua
+    Dialog dialog = null;   // Dialog đợi đối thủ nếu bạn là chủ phòng
+    Dialog acceptWatingDialog = null; // Dialog đợi sự phản hổi yêu cầu chơi lại
+    Boolean isSerVer = false; // cờ dánh dáu bạn là Chủ phòng
+    Boolean ExitedCompetitor = false;// Cờ đánh dấu đối thủ đã thoát hay chưa
+
+    ImageView chatting, exitGame, receivedSticker, sentSticker;
+    ;//Bao gồm icon chat để show BoxChat,icon để exit game, Hình chứa sticker được gửi từ đối phươn
+    TextView receivedString, sentMessage; //TextView để chứa Message từ đối phương, và được gửi từ bạn
+    Dialog chattingDialog;  //Box chat
+
 
     @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        final Dialog dialog = new Dialog(GameBluetoothActivity.this);
-        Boolean isSerVer = getIntent().getBooleanExtra("connected", false);
-        if (isSerVer) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_game_bluetooth);
+        mappingID();
+        boardInit();
+        initLoserDialog();
+        initWinnerDialog();
+        updateUI();
+        createChattingDialog();
+        exitGame.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mBluetoothService.mConnectedThread != null) {
+                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(GameBluetoothActivity.this)
+                            .setTitle("Thông báo")
+                            .setMessage("Bạn chắc chắn muốn thoát");
+                    alertDialogBuilder.setPositiveButton("Đồng ý",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface arg0, int arg1) {
+                                    mBluetoothService.sendString(BluetoothService.SEND_EXIT, BluetoothService.SEND_EXIT);
+                                    mBluetoothService.Disconnect();
+                                    finish();
+                                }
+                            });
+                    alertDialogBuilder.setNegativeButton("Hủy", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            //do nothing
+
+                        }
+                    });
+                    AlertDialog alertDialog = alertDialogBuilder.create();
+                    alertDialog.show();
+                } else {
+                    finish();
+                }
+            }
+        });
+        chatting.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(mBluetoothService.mConnectedThread!=null)
+                {
+                    chattingDialog.show();
+                }
+            }
+        });
+
+        dialog = new Dialog(GameBluetoothActivity.this);
+        isSerVer = getIntent().getBooleanExtra("connected", false);
+        //Nếu là server thì show 1 dialog chờ đợi đối thủ, nếu là client thì sẽ send Tên người chơi
+        if (isSerVer&&mBluetoothService.mBluetoothAdapter.isEnabled()) {
+            mBluetoothService.start();
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
             dialog.setContentView(R.layout.diaglog_loading);
             Window window = dialog.getWindow();
@@ -96,10 +162,15 @@ public class GameBluetoothActivity extends AppCompatActivity {
                 }
             });
             dialog.show();
+
         } else {
+            ToastCustom.show("Chủ phòng đánh trước",GameBluetoothActivity.this);
             startGame = true;
-            mBluetoothService.sendString(user.getName(), BluetoothService.SEND_STRING_NAME);
+            if (MySharedPerferences.isSavedBefore(GameBluetoothActivity.this)) {
+                mBluetoothService.sendString(user.getName(), BluetoothService.SEND_STRING_NAME);
+            }
         }
+        //Phân loại các thông điệp gửi đến UI thread
         mGameHandler = new Handler() {
             @Override
             public void handleMessage(@NonNull Message msg) {
@@ -113,14 +184,24 @@ public class GameBluetoothActivity extends AppCompatActivity {
                         break;
                     }
                     case MESSAGE_STRING_CHAT: {
-                        //Log.d("MainActivity", (String) msg.obj);
-                        Toast.makeText(GameBluetoothActivity.this, (String) msg.obj, Toast.LENGTH_SHORT).show();
+                        receivedString.setText((String) msg.obj);
+                        new CountDownTimer(3000, 1000) {
+                            @Override
+                            public void onTick(long millisUntilFinished) {
+                                receivedString.setVisibility(View.VISIBLE);
+                            }
+
+                            @Override
+                            public void onFinish() {
+                                receivedString.setVisibility(View.GONE);
+                            }
+                        }.start();
                         break;
                     }
                     case MESSAGE_STRING_NAME: {
-                        Log.d("Main", (String) msg.obj);
+
                         competitorName.setText((String) msg.obj);
-                        if (isSerVer) {
+                        if (isSerVer && MySharedPerferences.isSavedBefore(GameBluetoothActivity.this)) {
                             mBluetoothService.sendString(user.getName(), BluetoothService.SEND_STRING_NAME);
                         }
                         if (!isSerVer) {
@@ -132,7 +213,7 @@ public class GameBluetoothActivity extends AppCompatActivity {
                         byte[] readbuff = (byte[]) msg.obj;
                         Bitmap bitmap = BitmapFactory.decodeByteArray(readbuff, 0, msg.arg1);
                         competitorImg.setImageBitmap(bitmap);
-                        if (isSerVer) {
+                        if (isSerVer && MySharedPerferences.isSavedBefore(GameBluetoothActivity.this)) {
                             sendAvatar();
                         }
                         break;
@@ -140,66 +221,121 @@ public class GameBluetoothActivity extends AppCompatActivity {
                     case MESSAGE_IMAGE_CHAT: {
                         byte[] readbuff = (byte[]) msg.obj;
                         Bitmap bitmap = BitmapFactory.decodeByteArray(readbuff, 0, msg.arg1);
-                        imageView.setImageBitmap(bitmap);
+                        receivedSticker.setImageBitmap(bitmap);
+                        new CountDownTimer(3000, 1000) {
+                            @Override
+                            public void onTick(long millisUntilFinished) {
+                                receivedSticker.setVisibility(View.VISIBLE);
+                            }
+
+                            @Override
+                            public void onFinish() {
+                                receivedSticker.setVisibility(View.GONE);
+                            }
+                        }.start();
                         break;
                     }
-                    case MESSAGE_YOU_LOSE:
-                    {
-                        showDiaglogLoser();
+                    case MESSAGE_YOU_LOSE: {
+                        isWinner = true;
+                        loserDiaglog.show();
                         break;
                     }
-                    case MESSAGE_AGAIN:
-                    {
+                    case MESSAGE_AGAIN: {
+                        loserDiaglog.dismiss();
+                        winnerDiaglog.dismiss();
                         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(GameBluetoothActivity.this)
                                 .setTitle("Thông báo")
                                 .setMessage("Đối thủ muốn chơi lại");
                         alertDialogBuilder.setPositiveButton("Đồng ý",
                                 new DialogInterface.OnClickListener() {
                                     public void onClick(DialogInterface arg0, int arg1) {
-                                      mBluetoothService.sendString(BluetoothService.SEND_PLAY_AGAIN,BluetoothService.SEND_PLAY_AGAIN);
+                                        isWinner = false;
+                                        mBluetoothService.sendString(BluetoothService.SEND_ACCEPT, BluetoothService.SEND_ACCEPT);
+                                        board.reset();
+                                        mGridViewAdapter.notifyDataSetChanged();
+                                        ToastCustom.show("Người thua đánh trước",GameBluetoothActivity.this);
+
                                     }
                                 });
                         alertDialogBuilder.setNegativeButton("Hủy", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                mBluetoothService.sendString(BluetoothService.SEND_EXIT,BluetoothService.SEND_EXIT);
+                                mBluetoothService.sendString(BluetoothService.SEND_EXIT, BluetoothService.SEND_EXIT);
                             }
                         });
                         AlertDialog alertDialog = alertDialogBuilder.create();
                         alertDialog.show();
                         break;
                     }
-                    case MESSAGE_ACCEPT:
-                    {
-                        if(startGame)
-                        {
+                    case MESSAGE_ACCEPT: {
+                        if (startGame) {
+                            isWinner = false;
+                            acceptWatingDialog.dismiss();
                             board.reset();
                             mGridViewAdapter.notifyDataSetChanged();
-                            //dialog_.dismiss();
+                            ToastCustom.show("Người thua đánh trước",GameBluetoothActivity.this);
                         }
+
                         break;
                     }
-                    case MESSAGE_EXIT:
-                    {
-                        break;
+                    case MESSAGE_EXIT: {
+                        ExitedCompetitor = true;
+                        competitorImg.setImageResource(R.drawable.user);
+                        competitorName.setText("Đối phương");
+                        mBluetoothService.Disconnect();
+                        if (!isSerVer) {
+                            ToastCustom.show("Chủ phòng đã thoát",GameBluetoothActivity.this);
+                            finish();
+                            //                     finish();
+                        } else {
+                            winnerDiaglog.dismiss();
+                            loserDiaglog.dismiss();
+                            ToastCustom.show("Đối thủ đã thoát",GameBluetoothActivity.this);
+                            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(GameBluetoothActivity.this)
+                                    .setTitle("Thông báo")
+                                    .setMessage("Bạn muốn đợi đối thủ tiếp theo");
+                            alertDialogBuilder.setPositiveButton("Đồng ý",
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface arg0, int arg1) {
+                                            mBluetoothService.start();
+                                            board.reset();
+                                            mGridViewAdapter.notifyDataSetChanged();
+                                            dialog.show();
+                                        }
+                                    });
+                            alertDialogBuilder.setNegativeButton("Thoát", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    finish();
+                                }
+                            });
+                            AlertDialog alertDialog = alertDialogBuilder.create();
+                            alertDialog.show();
                     }
-                    case MESSAGE_BLUETOOTH: {
-                        if (msg.arg1 == 1 && msg.arg2 == success) {
-                            yourTurn = true;
-                            startGame = true;
-                            dialog.dismiss();
-                        }
-                        break;
-                    }
-                    default:
-                        break;
+                    break;
                 }
+                case MESSAGE_BLUETOOTH: {
+                    if (msg.arg1 == 1 && msg.arg2 == success) {
+                        ToastCustom.show("Chủ phòng đánh trước",GameBluetoothActivity.this);
+                        ExitedCompetitor = false;
+                        isWinner = false;
+                        yourTurn = true;
+                        startGame = true;
+                        dialog.dismiss();
+                    }
+                    break;
+                }
+                default:
+                break;
             }
-        };
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_game_bluetooth);
-        mappingID();
-        boardInit();
+        }
+    }
+
+    ;
+}
+
+    //Hàm cập nhật giao diện nếu bạn đã có thông tin cá nhân
+    private void updateUI() {
         if (!user.getName().equals("")) {
             yourName.setText(user.getName());
             String imagePath = user.getPathImage();
@@ -212,41 +348,20 @@ public class GameBluetoothActivity extends AppCompatActivity {
             }
 
         }
-        sendbtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mBluetoothService.sendString(message.getText().toString(), BluetoothService.SEND_STRING_CHAT);
-            }
-        });
-        sendImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String filePath = user.getPathImage() + "/avatar.jpg";
-                byte[] bufferImage = ImageFromInternal.readImageFromInternal(filePath);
-                if (bufferImage != null) {
-                    Toast.makeText(GameBluetoothActivity.this, String.valueOf(bufferImage.length), Toast.LENGTH_SHORT).show();
-                }
-//                        Log.d("Main", bufferImage.length + "");
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mBluetoothService.sendImage(bufferImage, BluetoothService.SEND_IMAGE_CHAT);
-                    }
-                }).start();
-            }
-        });
     }
 
+    //hàm ánh xạ View
     void mappingID() {
-
+        sentMessage = findViewById(R.id.sentString);
+        sentSticker = findViewById(R.id.sentSticker);
+        receivedString = findViewById(R.id.receivedString);
+        receivedSticker = findViewById(R.id.receivedSticker);
+        chatting = findViewById(R.id.chatting_dialog);
+        exitGame = findViewById(R.id.exit_GameActivity);
         competitorImg = findViewById(R.id.avatar_competitor);
         yourImg = findViewById(R.id.avatar_me);
         competitorName = findViewById(R.id.name_competitor);
         yourName = findViewById(R.id.name_me);
-        sendbtn = findViewById(R.id.sendText);
-        message = findViewById(R.id.message);
-        imageView = findViewById(R.id.image_game);
-        sendImage = findViewById(R.id.sendImage);
     }
 
     private void boardInit() {
@@ -260,8 +375,8 @@ public class GameBluetoothActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                if (!yourTurn || !startGame) {
-                    Toast.makeText(GameBluetoothActivity.this, "Chưa đến lượt!!", Toast.LENGTH_SHORT).show();
+                if (!yourTurn || !startGame || isWinner) {
+
                     return;
                 }
                 if (board.getField(position) != Field.EMPTY) {
@@ -274,14 +389,91 @@ public class GameBluetoothActivity extends AppCompatActivity {
                 //Gui vi tri cho doi phuong
                 mBluetoothService.sendInt(position);
                 if (board.findWinner(lastMove) == Field.PLAYER) {
-                    mBluetoothService.sendString(BluetoothService.YOU_LOSE, BluetoothService.YOU_LOSE);
-//                    showDiaglogWinner();
+                    isWinner = true;
+                    mBluetoothService.sendString(BluetoothService.SEND_YOU_LOSE, BluetoothService.SEND_YOU_LOSE);
+                    winnerDiaglog.show();
                 }
             }
-
         });
     }
 
+    // hàm tạo Box chat
+    void createChattingDialog() {
+        chattingDialog = new Dialog(GameBluetoothActivity.this);
+        chattingDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        chattingDialog.setContentView(R.layout.dialog_chat);
+        Window window = chattingDialog.getWindow();
+        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+        window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        WindowManager.LayoutParams windowAttr = window.getAttributes();
+        windowAttr.gravity = Gravity.CENTER;
+        window.setAttributes(windowAttr);
+        ImageView exittingClick = chattingDialog.findViewById(R.id.exit_sending);
+        EditText message = chattingDialog.findViewById(R.id.messageChatting);
+        TextView sending = chattingDialog.findViewById(R.id.sendMessage);
+        GridView gridView = chattingDialog.findViewById(R.id.gridViewChat);
+        ChattingAdapter chattingAdapter = new ChattingAdapter(MenuGameActivity.mListStick, GameBluetoothActivity.this);
+        gridView.setAdapter(chattingAdapter);
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                chattingDialog.dismiss();
+                sendIconDrawble(position);
+                new CountDownTimer(3000, 1000) {
+                    @Override
+                    public void onTick(long millisUntilFinished) {
+                        sentSticker.setImageResource(mListStick.get(position));
+                        sentSticker.setVisibility(View.VISIBLE);
+                    }
+
+                    @Override
+                    public void onFinish() {
+                        sentSticker.setVisibility(View.GONE);
+                    }
+                }.start();
+            }
+        });
+        exittingClick.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                chattingDialog.dismiss();
+            }
+        });
+        sending.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                chattingDialog.dismiss();
+                mBluetoothService.sendString(message.getText().toString(), BluetoothService.SEND_STRING_CHAT);
+                sentMessage.setText(message.getText().toString());
+                new CountDownTimer(3000, 1000) {
+                    @Override
+                    public void onTick(long millisUntilFinished) {
+                        sentMessage.setVisibility(View.VISIBLE);
+                    }
+
+                    @Override
+                    public void onFinish() {
+                        sentMessage.setVisibility(View.GONE);
+                    }
+                }.start();
+            }
+        });
+
+    }
+
+    //hàm gửi Icon cho đối phương
+    void sendIconDrawble(int Drawable) {
+        String stickerPath = MySharedPerferences.getValue(GameBluetoothActivity.this, "imagePath") + "/" + String.valueOf(mListStick.get(Drawable)) + ".jpg";
+        byte[] bufferImage = ImageFromInternal.readImageFromInternal(stickerPath);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                mBluetoothService.sendImage(bufferImage, BluetoothService.SEND_IMAGE_CHAT);
+            }
+        }).start();
+    }
+
+    // Hàm send avatar khi vào phòng cho đối pương
     void sendAvatar() {
         String filePath = user.getPathImage() + "/avatar.jpg";
         byte[] bufferImage = ImageFromInternal.readImageFromInternal(filePath);
@@ -291,11 +483,11 @@ public class GameBluetoothActivity extends AppCompatActivity {
                 mBluetoothService.sendImage(bufferImage, BluetoothService.SEND_IMAGE_AVATAR);
             }
         }).start();
-
     }
 
-    void showDiaglogWinner() {
-        final Dialog winnerDiaglog = new Dialog(this);
+    //Hàm  tạo winner Dialog nếu bạn thắng
+    void initWinnerDialog() {
+        winnerDiaglog = new Dialog(GameBluetoothActivity.this);
         winnerDiaglog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         winnerDiaglog.setContentView(R.layout.dialog_game_winner);
         Window window = winnerDiaglog.getWindow();
@@ -310,42 +502,86 @@ public class GameBluetoothActivity extends AppCompatActivity {
         button1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                final Dialog dialog_=new Dialog(GameBluetoothActivity.this);
-//                    dialog_.requestWindowFeature(Window.FEATURE_NO_TITLE);
-//                    dialog_.setContentView(R.layout.diaglog_loading);
-//                    Window window = dialog_.getWindow();
-//                    window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
-//                    window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-//                    WindowManager.LayoutParams windowAttributes = window.getAttributes();
-//                    windowAttributes.gravity = Gravity.CENTER;
-//                    window.setAttributes(windowAttributes);
-//                    dialog_.setCancelable(false);
-//                    TextView button1;
-//                    button1 = dialog_.findViewById(R.id.cancel_again);
-//                    button1.setOnClickListener(new View.OnClickListener() {
-//                        @Override
-//                        public void onClick(View v) {
-////                            mBluetoothService.Disconnect();
-//                            startGame=false;
-//                            dialog_.dismiss();
-//                        }
-//                    });
-//                    dialog_.show();
+                winnerDiaglog.dismiss();
+                if (!ExitedCompetitor) {
+                    mBluetoothService.sendString(BluetoothService.SEND_PLAY_AGAIN, BluetoothService.SEND_PLAY_AGAIN);
+                    showWatingAccept();
+                } else {
+                    ToastCustom.show("Đối thủ đã thoát",GameBluetoothActivity.this);
+                    mBluetoothService.Disconnect();
+                    if (isSerVer) {
+                        mBluetoothService.start();
+                        board.reset();
+                        mGridViewAdapter.notifyDataSetChanged();
+                        dialog.show();
+                    }
+                }
             }
         });
         button2 = winnerDiaglog.findViewById(R.id.exit);
         button2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                competitorImg.setImageResource(R.drawable.user);
+                competitorName.setText("Đối phương");
+                mBluetoothService.sendString(BluetoothService.SEND_EXIT, BluetoothService.SEND_EXIT);
                 mBluetoothService.Disconnect();
-                finish();
+                winnerDiaglog.dismiss();
+                if (!isSerVer) {
+                    finish();
+                } else {
+                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(GameBluetoothActivity.this)
+                            .setTitle("Thông báo")
+                            .setMessage("Bạn muốn đợi đối thủ tiếp theo");
+                    alertDialogBuilder.setPositiveButton("Đồng ý",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface arg0, int arg1) {
+                                    mBluetoothService.start();
+                                    board.reset();
+                                    mGridViewAdapter.notifyDataSetChanged();
+                                    dialog.show();
+                                }
+                            });
+                    alertDialogBuilder.setNegativeButton("Thoát", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            finish();
+                        }
+                    });
+                    AlertDialog alertDialog = alertDialogBuilder.create();
+                    alertDialog.show();
+                }
             }
         });
-        winnerDiaglog.show();
     }
 
-    void showDiaglogLoser() {
-        final Dialog loserDiaglog = new Dialog(this);
+    //Hàm  tạo wating Dilog nếu gửi yêu cầu chơi lại
+    void showWatingAccept() {
+        acceptWatingDialog = new Dialog(GameBluetoothActivity.this);
+        acceptWatingDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        acceptWatingDialog.setContentView(R.layout.wating_play_again);
+        Window window = acceptWatingDialog.getWindow();
+        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+        window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        WindowManager.LayoutParams windowAttributes = window.getAttributes();
+        windowAttributes.gravity = Gravity.CENTER;
+        window.setAttributes(windowAttributes);
+        acceptWatingDialog.setCancelable(false);
+        TextView button1;
+        button1 = acceptWatingDialog.findViewById(R.id.cancel_again);
+        button1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startGame = false;
+                acceptWatingDialog.dismiss();
+            }
+        });
+        acceptWatingDialog.show();
+    }
+
+    // Hàm tạo loser Dialog nếu bạn thua
+    void initLoserDialog() {
+        loserDiaglog = new Dialog(GameBluetoothActivity.this);
         loserDiaglog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         loserDiaglog.setContentView(R.layout.dialog_game_loser);
         Window window = loserDiaglog.getWindow();
@@ -361,15 +597,83 @@ public class GameBluetoothActivity extends AppCompatActivity {
         button1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                loserDiaglog.dismiss();
+                if (!ExitedCompetitor) {
+                    mBluetoothService.sendString(BluetoothService.SEND_PLAY_AGAIN, BluetoothService.SEND_PLAY_AGAIN);
+                    showWatingAccept();
+                } else {
+                    ToastCustom.show("Đối thủ đã thoát",GameBluetoothActivity.this);
+                    mBluetoothService.Disconnect();
+                    if (isSerVer) {
+                        mBluetoothService.start();
+                        board.reset();
+                        mGridViewAdapter.notifyDataSetChanged();
+                        dialog.show();
+                    }
+                }
             }
         });
         button2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                competitorImg.setImageResource(R.drawable.user);
+                competitorName.setText("Đối phương");
+                mBluetoothService.sendString(BluetoothService.SEND_EXIT, BluetoothService.SEND_EXIT);
                 mBluetoothService.Disconnect();
-                finish();
+                loserDiaglog.dismiss();
+                if (!isSerVer) {
+                    finish();
+                } else {
+                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(GameBluetoothActivity.this)
+                            .setTitle("Thông báo")
+                            .setMessage("Bạn muốn đợi đối thủ tiếp theo");
+                    alertDialogBuilder.setPositiveButton("Đồng ý",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface arg0, int arg1) {
+                                    mBluetoothService.start();
+                                    board.reset();
+                                    mGridViewAdapter.notifyDataSetChanged();
+                                    dialog.show();
+                                }
+                            });
+                    alertDialogBuilder.setNegativeButton("Thoát", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            finish();
+                        }
+                    });
+                    AlertDialog alertDialog = alertDialogBuilder.create();
+                    alertDialog.show();
+                }
             }
         });
-        loserDiaglog.show();
+    }
+
+    //Hàm override lại chức năng của phím back
+    @Override
+    public void onBackPressed() {
+        if (mBluetoothService.mConnectedThread != null) {
+            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(GameBluetoothActivity.this)
+                    .setTitle("Thông báo")
+                    .setMessage("Bạn chắc chắn muốn thoát");
+            alertDialogBuilder.setPositiveButton("Đồng ý",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface arg0, int arg1) {
+                            mBluetoothService.sendString(BluetoothService.SEND_EXIT, BluetoothService.SEND_EXIT);
+                            mBluetoothService.Disconnect();
+                            finish();
+                        }
+                    });
+            alertDialogBuilder.setNegativeButton("Hủy", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    return;
+                }
+            });
+            AlertDialog alertDialog = alertDialogBuilder.create();
+            alertDialog.show();
+        } else {
+            super.onBackPressed();
+        }
     }
 }
