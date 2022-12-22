@@ -6,12 +6,12 @@ public abstract class Player {
     /**
      * request name of player
      */
-    abstract void requestName();
+    public abstract void requestName();
 
     /**
      * player take turn and return a Position
      * @param board
      * @return
      */
-    abstract Position takeTurn(Board board);
+    public abstract Position takeTurn(Board board);
 }

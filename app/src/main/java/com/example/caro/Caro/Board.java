@@ -50,6 +50,8 @@ public class Board {
         return fields[pos % dimensionX][pos / dimensionY];
     }
 
+    public Field[][] getFields() { return fields; }
+
     void print() {
     }    //TODO
 
