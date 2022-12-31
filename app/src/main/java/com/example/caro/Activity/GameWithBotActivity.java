@@ -4,7 +4,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Dialog;
 import android.graphics.Color;
-import android.graphics.PostProcessor;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -18,6 +17,7 @@ import android.widget.Toast;
 
 import com.example.caro.Adapter.GridViewAdapter;
 import com.example.caro.Caro.Board;
+import com.example.caro.Caro.Bot;
 import com.example.caro.Caro.Field;
 import com.example.caro.Caro.Human;
 import com.example.caro.Caro.Player;
@@ -28,7 +28,7 @@ import com.example.caro.R;
 public class GameWithBotActivity extends AppCompatActivity {
 
     private Board board;
-    private Player player, opponent, activePlayer;
+    private Player player, bot, activePlayer;
     private Field winner;
     private Position lastMove;
     GridView mBoardView;
@@ -38,23 +38,24 @@ public class GameWithBotActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_game_with_bot);
+        setContentView(R.layout.activity_game);
 
         player = new Human();
-        opponent = new Human();
+        bot = new Bot();
         initGameState();
-        initBoard();
+        initBoard(5, 5);
     }
 
-    private void initBoard() {
+    private void initBoard(int dimensionX, int dimensionY) {
         mBoardView = findViewById(R.id.board);
-        mBoardView.setNumColumns(5);
-        board = new Board(5, 5);
+        mBoardView.setNumColumns(dimensionY);
+        board = new Board(dimensionX, dimensionY);
         mGridViewAdapter = new GridViewAdapter(this, board);
         mBoardView.setAdapter(mGridViewAdapter);
 
-        if (activePlayer == opponent) {
-            board.fillPostion(opponent.takeTurn(board), Field.OPPONENT);
+        if (activePlayer == bot) {
+            board.fillPostion(new Position((int) Math.ceil((double) dimensionX / 2),
+                    (int) Math.ceil((double) dimensionY / 2)), Field.OPPONENT);
             mGridViewAdapter.notifyDataSetChanged();
         }
 
@@ -74,7 +75,20 @@ public class GameWithBotActivity extends AppCompatActivity {
                     if (board.isFull()) {
                         showDialogDraw();
                     }
-                } else {
+                    else {
+                        lastMove = bot.takeTurn(board);
+                        board.fillPostion(lastMove, Field.OPPONENT);
+                        winner = board.findWinner(lastMove);
+                        if (winner == Field.EMPTY) {
+                            if (board.isFull()) {
+                                showDialogDraw();
+                            }
+                        } else {
+                            showDialogWin(winner);
+                        }
+                    }
+                }
+                else {
                     showDialogWin(winner);
                 }
             }
@@ -84,7 +98,7 @@ public class GameWithBotActivity extends AppCompatActivity {
             }
 
             private void nextPlayer() {
-                activePlayer = activePlayer == player ? opponent : player;
+                activePlayer = activePlayer == player ? bot : player;
             }
         });
     }
@@ -99,7 +113,7 @@ public class GameWithBotActivity extends AppCompatActivity {
         if (Util.randomBit()) {
             activePlayer = player;
         } else {
-            activePlayer = opponent;
+            activePlayer = bot;
         }
         winner = Field.EMPTY;
     }

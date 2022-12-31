@@ -1,8 +1,5 @@
 package com.example.caro.Activity;
 
-import static com.example.caro.Activity.MenuGameActivity.mBluetoothService;
-import static com.example.caro.Activity.MenuGameActivity.user;
-
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Dialog;
@@ -14,15 +11,11 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.caro.Adapter.ChattingAdapter;
 import com.example.caro.Adapter.GridViewAdapter;
-import com.example.caro.BlueToothService.BluetoothService;
 import com.example.caro.Caro.Board;
 import com.example.caro.Caro.Field;
 import com.example.caro.Caro.Human;
@@ -30,16 +23,6 @@ import com.example.caro.Caro.Player;
 import com.example.caro.Caro.Position;
 import com.example.caro.Caro.Util;
 import com.example.caro.R;
-import com.example.caro.Util.ImageFromInternal;
-import com.example.caro.Util.MySharedPerferences;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class GameActivity extends AppCompatActivity {
 

@@ -1,5 +1,6 @@
 package com.example.caro.Caro;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,7 +14,11 @@ public class Bot extends Player {
 
     @Override
     public Position takeTurn(Board board) {
-        Field[][] matrix = board.getFields();
+        Field[][] matrix_copy = board.getFields();
+        Field[][] matrix = new Field[matrix_copy.length][];
+        for (int i = 0; i < matrix_copy.length; i++) {
+            matrix[i] = matrix_copy[i].clone();
+        }
         return findWinningMove(matrix);
     }
 
@@ -38,21 +43,22 @@ public class Bot extends Player {
     }
 
     private List<Position> generateMoves(Field[][] board) {
-        int len = board.length * board[0].length;
+        int lenX = board.length;
+        int lenY = board[0].length;
         List<Position> moves = new ArrayList<Position>();
-        for (int i = 0; i < len; i++) {
-            for (int j = 0; j < len; j++) {
+        for (int i = 0; i < lenX; i++) {
+            for (int j = 0; j < lenY; j++) {
 
                 if (board[i][j] != Field.EMPTY) continue;
 
-                if ((board[i - 1][j - 1] != Field.EMPTY && i > 0 && j > 0)
-                        || (board[i - 1][j] != Field.EMPTY && i > 0)
-                        || (board[i - 1][j + 1] != Field.EMPTY && i > 0 && j < len - 1)
-                        || (board[i][j - 1] != Field.EMPTY && j > 0)
-                        || (board[i][j + 1] != Field.EMPTY && j < len - 1)
-                        || (board[i + 1][j - 1] != Field.EMPTY && i < len - 1 && j > 0)
-                        || (board[i + 1][j] != Field.EMPTY && i < len - 1)
-                        || (board[i + 1][j + 1] != Field.EMPTY && i < len - 1 && j < len - 1)) {
+                if ((i > 0 && j > 0 && board[i - 1][j - 1] != Field.EMPTY)
+                        || (i > 0 && board[i - 1][j] != Field.EMPTY)
+                        || (i > 0 && j < lenY - 1 && board[i - 1][j + 1] != Field.EMPTY)
+                        || (j > 0 && board[i][j - 1] != Field.EMPTY)
+                        || (j < lenY - 1 && board[i][j + 1] != Field.EMPTY)
+                        || (i < lenX - 1 && j > 0 && board[i + 1][j - 1] != Field.EMPTY)
+                        || (i < lenX - 1 && board[i + 1][j] != Field.EMPTY)
+                        || (i < lenX - 1 && j < lenY - 1 && board[i + 1][j + 1] != Field.EMPTY)) {
                     moves.add(new Position(i, j));
                 }
             }
@@ -270,7 +276,7 @@ public class Bot extends Player {
 
     private int getConsecutiveSetScore(int count, int blocks) {
         final int winGuarantee = 1000000;
-        if (blocks == 2 && count <= 5) return 0;
+        if (blocks == 2 && count < 5) return 0;
         switch (count) {
             case 5: {
                 return winScore;
