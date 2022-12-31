@@ -28,11 +28,8 @@ public class Bot extends Player {
         int bestScore = -1;
         Position winningMove = new Position(-1, -1);
         for (Position move : allPosibleMoves) {
-            Field[][] dummyBoard = tryMove(board, move);
-            int score = getScore(dummyBoard);
-            if (score > winScore) {
-                return move;
-            }
+            int score = Math.max(getScore(tryMove(board, move, Field.OPPONENT), Field.OPPONENT),
+                    getScore(tryMove(board, move, Field.PLAYER), Field.PLAYER));
             if (score > bestScore) {
                 bestScore = score;
                 winningMove = move;
@@ -67,18 +64,23 @@ public class Bot extends Player {
         return moves;
     }
 
-    private Field[][] tryMove(Field[][] board, Position move) {
-        board[move.x][move.y] = Field.OPPONENT;
-        return board;
+    private Field[][] tryMove(Field[][] board, Position move, Field player) {
+        Field[][] matrix = new Field[board.length][];
+        for (int i = 0; i < board.length; i++) {
+            matrix[i] = board[i].clone();
+        }
+        matrix[move.x][move.y] = player;
+        return matrix;
     }
 
-    private int getScore(Field[][] board) {
-        return evaluateHorizontal(board) +
-                evaluateVertical(board) +
-                evaluateDiagonal(board);
+    private int getScore(Field[][] board, Field player) {
+        int score1 = evaluateHorizontal(board, player);
+        int score2 = evaluateVertical(board, player);
+        int score3 = evaluateDiagonal(board, player);
+        return  score1 + score2 + score3;
     }
 
-    private int evaluateHorizontal(Field[][] board) {
+    private int evaluateHorizontal(Field[][] board, Field player) {
 
         int consecutive = 0;
         int blocks = 2;
@@ -87,7 +89,7 @@ public class Bot extends Player {
         for (int i = 0; i < board.length; i++) {
             for (int j = 0; j < board[0].length; j++) {
 
-                if (board[i][j] == Field.OPPONENT) {
+                if (board[i][j] == player) {
                     consecutive++;
                 }
 
@@ -110,7 +112,7 @@ public class Bot extends Player {
 
                 // gặp quân địch
                 // kết thúc chuỗi
-                else if (consecutive > 0) {
+                else if (board[i][j] != player && consecutive > 0) {
                     // tính điểm, reset
                     score += getConsecutiveSetScore(consecutive, blocks);
                     consecutive = 0;
@@ -137,7 +139,7 @@ public class Bot extends Player {
         return score;
     }
 
-    private int evaluateVertical(Field[][] board) {
+    private int evaluateVertical(Field[][] board, Field player) {
 
         int consecutive = 0;
         int blocks = 2;
@@ -146,7 +148,7 @@ public class Bot extends Player {
         for (int j = 0; j < board[0].length; j++) {
             for (int i = 0; i < board.length; i++) {
 
-                if (board[i][j] == Field.OPPONENT) {
+                if (board[i][j] == player) {
                     consecutive++;
                 }
 
@@ -169,7 +171,7 @@ public class Bot extends Player {
 
                 // gặp quân địch
                 // kết thúc chuỗi
-                else if (consecutive > 0) {
+                else if (board[i][j] != player && consecutive > 0) {
                     // tính điểm, reset
                     score += getConsecutiveSetScore(consecutive, blocks);
                     consecutive = 0;
@@ -196,7 +198,7 @@ public class Bot extends Player {
         return score;
     }
 
-    private int evaluateDiagonal(Field[][] board) {
+    private int evaluateDiagonal(Field[][] board, Field player) {
 
         int consecutive = 0;
         int blocks = 2;
@@ -209,7 +211,7 @@ public class Bot extends Player {
             for (int i = iStart; i <= iEnd; ++i) {
                 int j = k - i;
 
-                if (board[i][j] == Field.OPPONENT) {
+                if (board[i][j] == player) {
                     consecutive++;
                 } else if (board[i][j] == Field.EMPTY) {
                     if (consecutive > 0) {
@@ -220,7 +222,7 @@ public class Bot extends Player {
                     } else {
                         blocks = 1;
                     }
-                } else if (consecutive > 0) {
+                } else if (board[i][j] != player && consecutive > 0) {
                     score += getConsecutiveSetScore(consecutive, blocks);
                     consecutive = 0;
                     blocks = 2;
@@ -244,7 +246,7 @@ public class Bot extends Player {
             for (int i = iStart; i <= iEnd; ++i) {
                 int j = i - k;
 
-                if (board[i][j] == Field.OPPONENT) {
+                if (board[i][j] == player) {
                     consecutive++;
                 } else if (board[i][j] == Field.EMPTY) {
                     if (consecutive > 0) {
@@ -255,7 +257,7 @@ public class Bot extends Player {
                     } else {
                         blocks = 1;
                     }
-                } else if (consecutive > 0) {
+                } else if (board[i][j] != player && consecutive > 0) {
                     score += getConsecutiveSetScore(consecutive, blocks);
                     consecutive = 0;
                     blocks = 2;

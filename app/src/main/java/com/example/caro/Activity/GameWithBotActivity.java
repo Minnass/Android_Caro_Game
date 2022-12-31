@@ -43,7 +43,7 @@ public class GameWithBotActivity extends AppCompatActivity {
         player = new Human();
         bot = new Bot();
         initGameState();
-        initBoard(5, 5);
+        initBoard(20, 20);
     }
 
     private void initBoard(int dimensionX, int dimensionY) {
